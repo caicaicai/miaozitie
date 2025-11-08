@@ -313,6 +313,15 @@
             line-height: 1;
         }
 
+        /* 描红格和纯练格样式区分 */
+        .practice-item:has(.practice-label:contains('描红')) .grid-container {
+            background: #fffef8; /* 描红格略带米黄色 */
+        }
+
+        .practice-item:has(.practice-label:contains('练习')) .grid-container {
+            background: white; /* 纯练格纯白色 */
+        }
+
         .no-content {
             text-align: center;
             padding: 60px 20px;
@@ -368,8 +377,17 @@
 
             .preview-area {
                 padding: 8mm;
+            }
+
+            /* 默认双列 */
+            .preview-area.print-layout-2 {
                 column-count: 2;
                 column-gap: 10mm;
+            }
+
+            /* 单列 */
+            .preview-area.print-layout-1 {
+                column-count: 1;
             }
 
             .char-row {
@@ -477,8 +495,8 @@
                     <label>选择年级：</label>
                     <select id="gradeSelect">
                         <option value="all">全部年级</option>
-                        <option value="1-1">一年级上册</option>
-                        <option value="1-2" selected>一年级下册</option>
+                        <option value="1-1" selected>一年级上册</option>
+                        <option value="1-2">一年级下册</option>
                         <option value="2-1">二年级上册</option>
                         <option value="2-2">二年级下册</option>
                         <option value="3-1">三年级上册</option>
@@ -489,6 +507,14 @@
                         <option value="5-2">五年级下册</option>
                         <option value="6-1">六年级上册</option>
                         <option value="6-2">六年级下册</option>
+                    </select>
+                </div>
+
+                <div class="option-item">
+                    <label>打印布局：</label>
+                    <select id="printLayout">
+                        <option value="2" selected>双列打印</option>
+                        <option value="1">单列打印</option>
                     </select>
                 </div>
 
@@ -505,13 +531,20 @@
                 </div>
 
                 <div class="option-item">
-                    <label>每字练习次数：</label>
-                    <input type="number" id="practiceCount" value="12" min="3" max="15">
+                    <label>描红格数量：</label>
+                    <input type="number" id="traceCount" value="4" min="0" max="15">
+                    <span style="font-size: 12px; color: #999;">（有浅色指导）</span>
+                </div>
+
+                <div class="option-item">
+                    <label>纯练格数量：</label>
+                    <input type="number" id="blankCount" value="2" min="0" max="15">
+                    <span style="font-size: 12px; color: #999;">（完全空白）</span>
                 </div>
 
                 <div class="option-item">
                     <label>随机字数：</label>
-                    <input type="number" id="randomCount" value="21" min="1" max="20">
+                    <input type="number" id="randomCount" value="12" min="1" max="50">
                 </div>
             </div>
 
@@ -616,6 +649,10 @@
             // 清除之前的实例
             writerInstances = [];
 
+            // 重置打印布局类
+            const printLayout = document.getElementById('printLayout').value;
+            previewArea.className = 'preview-area print-layout-' + printLayout;
+
             setTimeout(() => {
                 const container = document.createElement('div');
 
@@ -625,6 +662,7 @@
                 });
 
                 previewArea.innerHTML = '';
+                previewArea.className = 'preview-area print-layout-' + printLayout;
                 previewArea.appendChild(container);
             }, 100);
         }
@@ -699,7 +737,9 @@
         // 初始化汉字的笔画序列
         function initCharStrokes(char, charIndex) {
             const gridSize = parseInt(document.getElementById('gridSize').value) || 45;
-            const practiceCount = parseInt(document.getElementById('practiceCount').value) || 8;
+            const traceCount = parseInt(document.getElementById('traceCount').value) || 4;
+            const blankCount = parseInt(document.getElementById('blankCount').value) || 2;
+            const totalPracticeCount = traceCount + blankCount;
             const opacity = parseInt(document.getElementById('opacity').value) / 100 || 0.25;
             const sequenceContainer = document.getElementById(`sequence-${charIndex}`);
             const practiceContainer = document.getElementById(`practice-${charIndex}`);
@@ -754,8 +794,8 @@
                                 }, i * 30);
                             }
 
-                            // 下方：创建多个描红练习格子（大小相同）
-                            for (let j = 0; j < practiceCount; j++) {
+                            // 下方：创建练习格子
+                            for (let j = 0; j < totalPracticeCount; j++) {
                                 const practiceItem = document.createElement('div');
                                 practiceItem.className = 'practice-item';
 
@@ -769,13 +809,29 @@
                                     <div class="grid-line-v"></div>
                                 `;
 
+                                // 添加标签区分描红格和纯练格
+                                const label = document.createElement('div');
+                                label.className = 'practice-label';
+                                if (j < traceCount) {
+                                    label.textContent = '描红';
+                                } else {
+                                    label.textContent = '练习';
+                                }
 
                                 practiceItem.appendChild(practiceGrid);
+                                practiceItem.appendChild(label);
                                 practiceContainer.appendChild(practiceItem);
 
-                                // 初始化格子，显示完整的字
+                                // 初始化格子
+                                // 前 traceCount 个格子显示描红（浅色文字）
+                                // 后面的格子完全空白
+                                const isTrace = j < traceCount;
                                 setTimeout(() => {
-                                    initStrokeGrid(char, charIndex, strokeCount, strokeCount, gridSize, opacity, false, false, j);
+                                    if (isTrace) {
+                                        // 描红格：显示浅色文字
+                                        initStrokeGrid(char, charIndex, strokeCount, strokeCount, gridSize, opacity, false, false, j);
+                                    }
+                                    // 纯练格：不显示任何内容，保持空白
                                 }, (strokeCount + j + 1) * 30);
                             }
 
@@ -900,6 +956,10 @@
                 alert('请先生成练字帖再打印！');
                 return;
             }
+
+            // 应用打印布局设置
+            const printLayout = document.getElementById('printLayout').value;
+            previewArea.className = 'preview-area print-layout-' + printLayout;
 
             window.print();
         }
