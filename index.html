@@ -744,8 +744,11 @@
         // 初始化汉字的笔画序列
         function initCharStrokes(char, charIndex) {
             const gridSize = parseInt(document.getElementById('gridSize').value) || 45;
-            const traceCount = parseInt(document.getElementById('traceCount').value) || 4;
-            const blankCount = parseInt(document.getElementById('blankCount').value) || 2;
+            // 允许0值，使用 ?? 而不是 ||
+            const traceCountInput = document.getElementById('traceCount').value;
+            const blankCountInput = document.getElementById('blankCount').value;
+            const traceCount = traceCountInput !== '' ? parseInt(traceCountInput) : 4;
+            const blankCount = blankCountInput !== '' ? parseInt(blankCountInput) : 2;
             const totalPracticeCount = traceCount + blankCount;
             const opacity = parseInt(document.getElementById('opacity').value) / 100 || 0.25;
             const sequenceContainer = document.getElementById(`sequence-${charIndex}`);
