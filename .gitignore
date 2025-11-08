@@ -1,0 +1,22 @@
+# 编辑器和IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.log
+*.tmp
+
+# Node modules (如果将来需要)
+node_modules/
+
+# 构建输出 (如果将来需要)
+dist/
+build/
+
