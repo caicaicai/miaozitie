@@ -237,7 +237,7 @@
 
         .stroke-sequence {
             display: flex;
-            gap: 4px;
+            gap: 3px;
             flex-wrap: wrap;
             align-items: flex-start;
         }
@@ -263,15 +263,16 @@
             gap: 2px;
         }
 
-        /* 统一格子大小 */
+        /* 笔画演示格子 - 小号无田字格 */
         .grid-container-small {
             position: relative;
-            width: 30px;
-            height: 30px;
-            border: 1px solid #4CAF50;
+            width: 22px;
+            height: 22px;
+            border: 1px solid #ddd;
             background: white;
         }
 
+        /* 练习格子 - 带田字格 */
         .grid-container {
             position: relative;
             width: 45px;
@@ -280,14 +281,14 @@
             background: white;
         }
 
-        /* 田字格样式 */
-        .grid-line-h,
-        .grid-line-v {
+        /* 田字格样式 - 只用于练习格子 */
+        .grid-container .grid-line-h,
+        .grid-container .grid-line-v {
             position: absolute;
             background: none;
         }
 
-        .grid-line-h {
+        .grid-container .grid-line-h {
             width: 100%;
             height: 0;
             top: 50%;
@@ -295,7 +296,7 @@
             border-top: 1px dashed #4CAF50;
         }
 
-        .grid-line-v {
+        .grid-container .grid-line-v {
             width: 0;
             height: 100%;
             top: 0;
@@ -304,7 +305,7 @@
         }
 
         .stroke-label {
-            font-size: 8px;
+            font-size: 7px;
             color: #999;
             line-height: 1;
         }
@@ -419,7 +420,11 @@
             }
 
             .stroke-sequence {
-                gap: 3px;
+                gap: 2px;
+            }
+            
+            .stroke-label {
+                font-size: 6px;
             }
 
             .practice-sequence {
@@ -431,10 +436,10 @@
                 font-size: 7px;
             }
 
-            /* 笔画演示格子 - 更小 */
+            /* 笔画演示格子 - 打印时更小 */
             .grid-container-small {
-                width: 18px;
-                height: 18px;
+                width: 15px;
+                height: 15px;
             }
 
             /* 练习格子 - 保持合适大小 */
@@ -772,15 +777,11 @@
 
                                 const gridContainer = document.createElement('div');
                                 gridContainer.className = 'grid-container-small';
-                                gridContainer.style.width = gridSize + 'px';
-                                gridContainer.style.height = gridSize + 'px';
+                                // 笔画演示格子固定为22px，不受gridSize影响
+                                gridContainer.style.width = '22px';
+                                gridContainer.style.height = '22px';
                                 gridContainer.id = `char-${charIndex}-demo-${i}`;
-
-                                // 添加田字格线
-                                gridContainer.innerHTML = `
-                                    <div class="grid-line-h"></div>
-                                    <div class="grid-line-v"></div>
-                                `;
+                                // 笔画演示格子不添加田字格线
 
                                 const label = document.createElement('div');
                                 label.className = 'stroke-label';
@@ -790,9 +791,9 @@
                                 item.appendChild(label);
                                 sequenceContainer.appendChild(item);
 
-                                // 初始化这个格子，显示前i笔（笔画演示用实色）
+                                // 初始化这个格子，显示前i笔（笔画演示用实色，固定22px）
                                 setTimeout(() => {
-                                    initStrokeGrid(char, charIndex, i, strokeCount, gridSize, 1.0, false, true);
+                                    initStrokeGrid(char, charIndex, i, strokeCount, 22, 1.0, false, true);
                                 }, i * 30);
                             }
 
