@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抄字模式 - 喵字帖</title>
+    <script src="hanzi-writer.min.js"></script>
+    <script src="pinyin-pro.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .header .nav-links {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header .nav-link {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .header .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-panel {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1em;
+        }
+
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+
+        .options-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-item label {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .option-item select,
+        .option-item input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .option-item select:focus,
+        .option-item input:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 14px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #e8590c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(253, 126, 20, 0.4);
+        }
+
+        .btn-clear {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .preview-area {
+            padding: 15px;
+            min-height: 300px;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .no-content::before {
+            content: '✍️';
+            display: block;
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* 抄字网格布局 */
+        .copy-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+            justify-content: flex-start;
+        }
+
+        .char-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 3px;
+            background: #fff;
+            width: calc(12.5%); /* 8列 */
+            border-bottom: 1px dashed #ccc;
+            border-right: 1px solid #f0f0f0;
+        }
+
+        /* 每行最后一个去掉右边框 */
+        .char-item:nth-child(8n) {
+            border-right: none;
+        }
+
+        .print-cols-6 .char-item:nth-child(8n) {
+            border-right: 1px solid #f0f0f0;
+        }
+        .print-cols-6 .char-item:nth-child(6n) {
+            border-right: none;
+        }
+
+        .print-cols-10 .char-item:nth-child(8n) {
+            border-right: 1px solid #f0f0f0;
+        }
+        .print-cols-10 .char-item:nth-child(10n) {
+            border-right: none;
+        }
+
+        /* 拼音 */
+        .char-pinyin {
+            font-size: 10px;
+            color: #e74c3c;
+            height: 14px;
+            line-height: 14px;
+        }
+
+        /* 原字 */
+        .char-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        /* 笔顺区域 - 固定高度容器 */
+        .stroke-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1px;
+            margin-bottom: 2px;
+            justify-content: center;
+            align-content: flex-start;
+            /* max-width 和 height 由 JS 动态设置 */
+        }
+
+        .stroke-mini {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .stroke-mini svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 练习格 */
+        .practice-grid {
+            width: 32px;
+            height: 32px;
+            border: 1.5px solid #4CAF50;
+            background: #fff;
+            position: relative;
+        }
+
+        .practice-grid.blank {
+            background: #fff;
+        }
+
+        .practice-grid.trace {
+            background: #fffef8;
+        }
+
+        /* 田字格线 */
+        .grid-line-h,
+        .grid-line-v {
+            position: absolute;
+            background: transparent;
+        }
+
+        .grid-line-h {
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 0;
+            border-top: 1px dashed #4CAF50;
+            transform: translateY(-50%);
+        }
+
+        .grid-line-v {
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            border-left: 1px dashed #4CAF50;
+            transform: translateX(-50%);
+        }
+
+        .practice-grid svg {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 页脚隐藏在打印中 */
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer a {
+            color: #11998e;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 打印样式 */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .header,
+            .control-panel,
+            .footer {
+                display: none;
+            }
+
+            .preview-area {
+                padding: 0;
+            }
+
+            .copy-grid {
+                gap: 1px;
+            }
+
+            /* 打印时每行8个字 */
+            .char-item {
+                width: calc(12.5%);
+                padding: 4px 2px;
+                border-bottom: 1px dashed #999;
+                border-right: 1px solid #eee;
+            }
+
+            .char-item:nth-child(8n) {
+                border-right: none;
+            }
+
+            .char-pinyin {
+                font-size: 8px;
+                height: 12px;
+                line-height: 12px;
+            }
+
+            .char-display {
+                font-size: 16px;
+            }
+
+            .stroke-mini {
+                width: 8px;
+                height: 8px;
+            }
+
+            .practice-grid {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* 6列布局 */
+            .print-cols-6 .char-item {
+                width: calc(16.666%);
+            }
+
+            .print-cols-6 .char-item:nth-child(8n) {
+                border-right: 1px solid #eee;
+            }
+
+            .print-cols-6 .char-item:nth-child(6n) {
+                border-right: none;
+            }
+
+            /* 10列布局 */
+            .print-cols-10 .char-item {
+                width: calc(10%);
+            }
+
+            .print-cols-10 .char-item:nth-child(8n) {
+                border-right: 1px solid #eee;
+            }
+
+            .print-cols-10 .char-item:nth-child(10n) {
+                border-right: none;
+            }
+
+            .print-cols-10 .char-display {
+                font-size: 14px;
+            }
+
+            .print-cols-10 .practice-grid {
+                width: 18px;
+                height: 18px;
+            }
+
+            .print-cols-10 .stroke-mini {
+                width: 6px;
+                height: 6px;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .char-item {
+                width: calc(25% - 2px); /* 4列 */
+            }
+
+            .options-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>✍️ 抄字模式</h1>
+            <p>紧凑布局，适合抄写文章</p>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">📝 笔画练习</a>
+                <a href="pinyin.html" class="nav-link">📖 文章注音</a>
+            </div>
+        </header>
+
+        <div class="control-panel">
+            <div class="input-group">
+                <label>📝 输入要抄写的文章或句子：</label>
+                <textarea id="textInput" rows="3" placeholder="输入一段话，每个汉字会生成一个抄写格..."></textarea>
+            </div>
+
+            <div class="options-row">
+                <div class="option-item">
+                    <label>年级：</label>
+                    <select id="gradeSelect">
+                        <option value="all">全部年级</option>
+                        <option value="1-1">一年级上</option>
+                        <option value="1-2">一年级下</option>
+                        <option value="2-1">二年级上</option>
+                        <option value="2-2">二年级下</option>
+                        <option value="3-1">三年级上</option>
+                        <option value="3-2">三年级下</option>
+                        <option value="4-1">四年级上</option>
+                        <option value="4-2">四年级下</option>
+                        <option value="5-1">五年级上</option>
+                        <option value="5-2">五年级下</option>
+                        <option value="6-1">六年级上</option>
+                        <option value="6-2">六年级下</option>
+                    </select>
+                </div>
+
+                <div class="option-item">
+                    <label>练习格：</label>
+                    <select id="gridType">
+                        <option value="trace">描红</option>
+                        <option value="blank">空白</option>
+                    </select>
+                </div>
+
+                <div class="option-item">
+                    <label>笔顺列数：</label>
+                    <input type="number" id="strokeCols" value="6" min="3" max="12" style="width: 50px;">
+                </div>
+
+                <div class="option-item">
+                    <label>笔顺行数：</label>
+                    <input type="number" id="strokeRows" value="3" min="1" max="6" style="width: 50px;">
+                </div>
+
+                <div class="option-item">
+                    <label>打印列数：</label>
+                    <select id="printCols">
+                        <option value="8">8列</option>
+                        <option value="6">6列</option>
+                        <option value="10">10列（紧凑）</option>
+                    </select>
+                </div>
+
+                <div class="option-item">
+                    <label>随机字数：</label>
+                    <input type="number" id="randomCount" value="24" min="1" max="100" style="width: 60px;">
+                </div>
+            </div>
+
+            <div class="options-row">
+                <div class="option-item">
+                    <label><input type="checkbox" id="showPinyin" checked> 显示拼音</label>
+                </div>
+                <div class="option-item">
+                    <label><input type="checkbox" id="showChar" checked> 显示原字</label>
+                </div>
+                <div class="option-item">
+                    <label><input type="checkbox" id="showStroke" checked> 显示笔顺</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="generateSheet()">生成抄字帖</button>
+                <button class="btn-primary" onclick="generateRandom()">随机生成</button>
+                <button class="btn-print" onclick="printSheet()">打印</button>
+                <button class="btn-clear" onclick="clearSheet()">清空</button>
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="no-content">
+                输入文字或点击"随机生成"开始制作抄字帖
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                基于 <a href="https://hanziwriter.org/" target="_blank">Hanzi Writer</a> 和 
+                <a href="https://github.com/zh-lx/pinyin-pro" target="_blank">Pinyin Pro</a> |
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank">GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // 小学生字库
+        const gradeChars = {
+            '1-1': ['一', '二', '三', '十', '木', '禾', '上', '下', '土', '个', '八', '入', '大', '天', '人', '火', '文', '六', '七', '儿', '九', '无', '口', '日', '中', '了', '子', '门', '月', '不', '开', '四', '五', '目', '耳', '头', '米', '见', '白', '田', '电', '也', '长', '山', '出', '飞', '马', '鸟', '云', '公', '车', '牛', '羊', '小', '少', '巾', '牙', '尺', '毛', '卜', '又', '心', '风', '力', '手', '水', '广', '升', '足', '走', '方', '半', '巴', '业', '本', '平', '书', '自', '已', '东', '西', '回', '片', '皮', '生', '里', '果', '几', '用', '鱼', '今', '正', '雨', '两', '年', '左', '右'],
+            '1-2': ['万', '丁', '冬', '百', '齐', '说', '话', '朋', '友', '春', '高', '你', '们', '红', '绿', '花', '草', '爷', '节', '岁', '亲', '的', '行', '古', '声', '多', '处', '知', '忙', '洗', '认', '扫', '真', '父', '母', '爸', '全', '关', '写', '完', '家', '看', '着', '画', '笑', '兴', '会', '妈', '奶', '午', '合', '放', '收', '女', '太', '气', '早', '去', '亮', '和', '语', '千', '李', '秀', '香', '听', '唱', '连', '远', '定', '向', '以', '后', '更', '主', '意', '总', '先', '干', '赶', '起', '明', '净', '同', '工', '专', '才', '级', '队', '蚂', '蚁', '前', '空', '房', '网', '诗', '林', '童', '黄', '闭', '立', '是', '朵', '美', '我', '叶', '机', '她', '他', '送', '过', '时', '让', '吗', '吧', '虫', '往', '得', '很', '河', '姐', '借', '呢', '呀', '哪', '谁', '怕', '跟', '凉', '量', '最', '园', '因', '为', '脸', '阳', '光', '可', '石', '办', '法', '找', '许', '别', '到', '那', '都', '吓', '叫', '再', '象', '像', '做', '点', '照', '沙', '海', '桥', '竹', '军', '苗', '井', '乡', '面', '忘', '想', '念', '王', '从', '边', '这', '进', '道', '贝', '原', '男', '爱', '虾', '跑', '吹', '地', '快', '乐', '老', '师', '短', '对', '冷', '淡', '热', '情', '拉', '把', '给', '活', '种', '吃', '练', '习', '苦', '学', '非', '常', '问', '间', '伙', '伴', '共', '汽', '分', '要', '没', '位', '孩', '选', '北', '南', '江', '湖', '秋', '只', '星', '雪', '帮', '请', '就', '球', '玩', '跳', '桃', '树', '刚', '兰', '各', '坐', '座', '带', '急', '名', '发', '成', '晚', '动', '新', '有', '在', '什', '么', '变', '条'],
+            '2-1': ['宜', '实', '色', '华', '谷', '金', '尽', '层', '丰', '壮', '波', '浪', '灯', '作', '字', '苹', '丽', '劳', '尤', '其', '区', '巨', '它', '安', '块', '站', '已', '甲', '豆', '识', '纷', '经', '如', '好', '娃', '洼', '于', '首', '枝', '枫', '记', '刘', '胡', '戏', '棋', '钢', '观', '弹', '琴', '养', '休', '伸', '甜', '歌', '院', '除', '息', '您', '牵', '困', '员', '青', '宁', '室', '样', '校', '切', '教', '响', '班', '欠', '元', '包', '钟', '叹', '哈', '迟', '闹', '及', '身', '仔', '细', '次', '外', '计', '怦', '礼', '加', '夕', '与', '川', '州', '台', '争', '民', '族', '亿', '洁', '欢', '祖', '旗', '帜', '庆', '曲', '央', '交', '市', '旁', '优', '阴', '坛', '城', '国', '图', '申', '匹', '互', '京', '泪', '洋', '拥', '抱', '相', '扬', '讲', '打', '指', '接', '惊', '故', '侯', '奇', '寸', '落', '补', '拔', '功', '助', '取', '所', '信', '沿', '拾', '际', '蛙', '错', '答', '还', '言', '每', '治', '棵', '挂', '哇', '怪', '慢', '怎', '思', '穿', '弯', '比', '服', '浅', '漂', '啦', '啊', '夫', '表', '示', '号', '汗', '伤', '吸', '极', '串', '免', '告', '诉', '狐', '狸', '猴', '颗', '斤', '折', '挑', '根', '独', '满', '容', '易', '采', '背', '板', '椅', '但', '傍', '清', '消', '由', '术', '吐', '注', '课', '铅', '笔', '桌', '景', '拿', '坏', '松', '扎', '抓', '祝', '福', '句', '幸', '之', '令', '布', '直', '当', '第', '现', '期', '轮', '路', '户', '亚', '角', '周', '床', '病', '始', '张', '寻', '哭', '良', '食', '双', '体', '操', '场', '份', '粉', '昨', '晴', '姑', '娘', '妹', '读', '舟', '乘', '音', '客', '何', '汪', '丛', '牢', '拍', '护', '保', '物', '鸡', '猫', '羽', '领', '捉', '理', '跃', '蹦', '灵', '晨', '失', '觉', '扔', '掉', '眼', '睛', '纸', '船', '久', '乎', '至', '死', '腰', '捡', '粒', '被', '并', '夜', '喜', '重', '味', '轻', '刻', '群', '卫', '运', '宇', '宙', '航', '舰', '冲', '晒', '池', '浮', '灾', '害', '黑', '器', '岸', '纹', '洞', '影', '倒', '游', '圆', '围', '杯', '件', '住', '须', '能', '飘', '必', '事', '历', '史', '灭', '克', '化', '代', '孙', '植', '厂', '产', '介', '农', '科', '技', '纺', '织'],
+            '2-2': ['脱', '冻', '溪', '棉', '探', '摇', '野', '躲', '解', '未', '追', '店', '枯', '徐', '烧', '荣', '菜', '宿', '冈', '世', '界', '轰', '笋', '芽', '喊', '呼', '唤', '弟', '哥', '骨', '抽', '拐', '浇', '终', '静', '躺', '谢', '渐', '微', '瓦', '泉', '然', '结', '股', '脆', '塔', '杜', '鹃', '冒', '雷', '需', '迈', '迷', '迹', '叔', '锋', '滴', '洒', '泥', '泞', '扑', '托', '摸', '利', '铃', '弱', '末', '芬', '芳', '夏', '应', '该', '岛', '展', '建', '纱', '环', '绕', '胜', '隐', '约', '省', '茂', '盛', '吾', '季', '留', '杏', '密', '蜜', '坡', '搭', '摘', '钉', '沟', '够', '龙', '恩', '寿', '柏', '泼', '特', '敬', '鲜', '脚', '度', '凤', '凰', '束', '勾', '府', '单', '夺', '宫', '扮', '雄', '伟', '烁', '辉', '煌', '另', '志', '题', '提', '漫', '朗', '哄', '喝', '骗', '刀', '尔', '求', '仍', '使', '便', '英', '票', '整', '式', '而', '且', '丹', '乌', '艺', '显', '忽', '丝', '杆', '眨', '涛', '陈', '转', '斜', '吴', '含', '窗', '炉', '岭', '鸣', '绝', '银', '烟', '泊', '流', '柳', '垂', '乱', '沉', '压', '逃', '越', '阵', '彩', '虹', '蝉', '蜘', '蛛', '册', '岩', '宝', '趴', '印', '刨', '埋', '陆', '铁', '质', '厚', '底', '忠', '导', '盏', '积', '稠', '稀', '针', '碰', '慌', '兄', '呆', '商', '抹', '挤', '拱', '决', '价', '钱', '购', '批', '评', '报', '玻', '璃', '破', '碎', '滑', '继', '续', '封', '骄', '傲', '拎', '桶', '停', '聪', '胳', '膊', '甸', '晃', '荡', '叭', '玲', '狗', '糟', '楼', '梯', '肯', '脑', '筋', '讶', '谈', '派', '引', '列', '峰', '敲', '附', '近', '守', '丢', '焦', '费', '望', '算', '此', '桩', '肥', '灰', '讨', '厌', '冰', '蛋', '壳', '鸭', '欺', '负', '鹅', '翅', '膀', '勺', '斗', '玉', '组', '珍', '珠', '数', '钻', '研', '睡', '距', '离', '油', '检', '查', '团', '斥', '责', '炎', '夸', '奖', '亡', '肉', '耐', '谜', '传', '染', '类', '严', '寒'],
+            '3-1': ['坪', '坝', '戴', '招', '蝴', '蝶', '孔', '雀', '舞', '铜', '粗', '尾', '要', '装', '劲', '绒', '朝', '些', '钓', '察', '瓣', '拢', '掌', '趣', '爬', '峰', '顶', '似', '苍', '仰', '咱', '奋', '辫', '勇', '居', '郊', '散', '步', '胸', '脯', '渣', '或', '者', '敢', '惜', '低', '诚', '基', '突', '按', '摆', '弄', '准', '备', '侧', '胶', '卷', '辆', '秘', '杂', '社', '著', '藏', '悄', '闪', '坑', '臣', '推', '旅', '考', '秦', '纪', '遗', '究', '震', '促', '深', '忆', '异', '逢', '佳', '倍', '遥', '遍', '插', '精', '希', '却', '依', '拼', '命', '奔', '村', '抖', '丧', '磨', '坊', '扇', '枚', '邮', '爽', '柿', '仙', '梨', '菠', '萝', '粮', '紧', '杨', '艳', '内', '梦', '醒', '苏', '湿', '娇', '嫩', '强', '适', '昆', '播', '修', '致', '论', '试', '验', '袋', '证', '概', '减', '阻', '测', '括', '确', '误', '途', '超', '堂', '镜', '闲', '待', '阅', '腿', '随', '调', '简', '拜', '访', '具', '闻', '尘', '仆', '纳', '闷', '丘', '迎', '等', '止', '境', '授', '品', '暗', '降', '丈', '肢', '肌', '肤', '辽', '阔', '血', '液', '滋', '润', '创', '造', '县', '设', '参', '部', '横', '跨', '举', '击', '坚', '固', '栏', '案', '爪', '贵', '断', '楚', '孤', '帆', '蓝', '懒', '披', '划', '威', '武', '拣', '顔', '形', '状', '渔', '料', '辈', '汇', '欣', '赏', '映', '挡', '视', '线', '浸', '献', '药', '材', '软', '刮', '舌', '矛', '盾', '集', '持', '般', '架', '龟', '攻', '炮', '坦', '战', '神', '兵', '退', '挖', '鞋', '斧', '锯', '屋', '抢', '难', '初', '管', '敌', '阶', '懂', '陶', '谦', '虚', '嘴', '恼', '怒', '吵', '感', '荒', '捧', '朴', '素', '值', '受', '愿', '姿', '势', '投', '况', '吞', '烈', '绪', '述', '普', '通', '鼓', '励', '育', '瓶', '系', '绳', '茶', '危', '险', '顺', '俩', '索', '激', '堵', '获', '予', '担', '宽', '裕', '买', '猜', '糖', '即', '卡', '盼', '仁', '贴'],
+            '3-2': ['燕', '聚', '增', '掠', '稀', '尖', '偶', '沾', '圈', '漾', '倦', '符', '演', '赞', '咏', '碧', '妆', '裁', '剪', '滨', '紫', '荷', '挨', '莲', '蓬', '账', '仿', '佛', '裳', '翩', '蹈', '蜻', '蜓', '翠', '秆', '腹', '赤', '衬', '衫', '透', '泛', '泡', '饲', '翁', '陡', '壁', '欧', '洲', '瑞', '士', '舒', '启', '殊', '骤', '涉', '疲', '政', '踏', '救', '载', '森', '郁', '葱', '湛', '盖', '犁', '砍', '裸', '扩', '栋', '柴', '喘', '黎', '寓', '则', '窟', '窿', '狼', '叼', '街', '劝', '悔', '盘', '缠', '硬', '弓', '魏', '射', '箭', '猎', '雁', '弦', '悲', '惨', '愈', '痛', '裂', '叮', '嘱', '排', '靠', '幅', '审', '肃', '晌', '悦', '熟', '悉', '诲', '赛', '疼', '忧', '慰', '梭', '虽', '狂', '赢', '暑', '益', '穷', '将', '若', '俱', '博', '鸦', '截', '伍', '默', '局', '棒', '羡', '慕', '禁', '席', '众', '纠', '匠', '替', '抄', '墨', '骂', '缩', '承', '肩', '扛', '缘', '愤', '毕', '戒', '既', '贺', '顾', '迅', '速', '复', '恰', '犯', '缓', '婆', '议', '达', '稚', '烦', '享', '炸', '医', '输', '眉', '型', '否', '垫', '酒', '掩', '咬', '拳', '制', '柔', '渴', '罐', '累', '竟', '匆', '哀', '舔', '反', '递', '忍', '凑', '咽', '唾', '沫', '涌', '差', '抵', '氏', '庄', '稼', '兽', '存', '繁', '殖', '蔬', '麻', '较', '杀', '预', '幕', '临', '悬', '曾', '奥', '努', '登', '任', '撒', '藻', '旦', '项', '估', '龄', '络', '箱', '迫', '悟', '盯', '鼠', '唐', '警', '眯', '览', '敞', '寄', '秒', '恋', '彤', '霞', '陪', '趁', '窄', '脖', '段', '漆', '胆', '踪', '镇', '摊', '鼻', '换', '摔', '竖', '卖', '售', '驮', '构', '端', '掏', '馆', '饭', '辨', '堆', '模', '付', '标', '齿', '乞', '巧', '霄', '渡', '屏', '烛', '晓', '偷', '淹', '官', '逼', '姓', '睁', '旱', '徒', '腾', '催', '吊', '跪', '渠', '灌', '溉', '隆', '塌', '露', '燃', '熊', '挣', '熄', '喷', '缺', '纯', '冶', '炼', '盆'],
+            '4-1': ['潮', '称', '盐', '笼', '罩', '蒙', '薄', '雾', '昂', '沸', '贯', '旧', '恢', '灿', '烂', '竿', '茫', '桨', '规', '律', '支', '株', '缝', '隙', '耀', '梢', '寂', '莫', '腊', '浑', '疑', '虎', '占', '铺', '均', '匀', '叠', '茎', '柄', '触', '痕', '逐', '宅', '蔽', '弃', '毫', '遇', '择', '址', '穴', '掘', '搜', '倾', '扒', '抛', '溢', '允', '墙', '牌', '添', '训', '覆', '凝', '辣', '酷', '愉', '拆', '融', '剩', '伐', '煤', '颈', '郑', '厉', '剧', '餐', '倘', '饮', '侍', '脾', '蹲', '供', '邻', '性', '格', '凭', '贪', '职', '痒', '稿', '踩', '梅', '蛇', '跌', '撞', '辟', '崇', '旋', '嘉', '砖', '隔', '屯', '堡', '垒', '仗', '扶', '智', '慧', '魄', '殿', '廊', '柱', '栽', '筑', '阁', '朱', '堤', '雕', '狮', '态', '孟', '浩', '陵', '辞', '唯', '舍', '君', '洪', '暴', '猛', '涨', '裤', '懒', '稳', '俗', '衡', '序', '伏', '峡', '桂', '移', '湾', '彼', '袭', '余', '怀', '旷', '暂', '胞', '脉', '帝', '义', '伯', '租', '振', '范', '闯', '凡', '巡', '嚷', '妇', '惩', '篇', '荐', '翻', '帘', '页', '删', '词', '燥', '握', '洽', '昏', '厅', '糊', '改', '程', '赖', '耕', '驾', '幻', '潜', '核', '控', '联', '哲', '归', '恐', '凶', '笨', '鸽', '仅', '顿', '描', '绘', '吨', '盈', '敏', '捷', '崭'],
+            '4-2': ['亭', '庭', '潭', '螺', '谙', '澜', '瑕', '攀', '峦', '泰', '骆', '驼', '罗', '障', '兀', '绵', '浙', '桐', '簇', '浓', '臀', '稍', '额', '擦', '蜿', '蜒', '乳', '据', '源', '维', '财', '属', '货', '驰', '赠', '驶', '德', '惑', '码', '库', '捎', '橡', '拨', '尊', '沃', '呈', '惫', '堪', '善', '款', '例', '瘦', '杰', '喉', '捶', '僵', '配', '幼', '滩', '侦', '嘲', '啄', '企', '愚', '蠢', '返', '吁', '拦', '鸥', '帽', '彻', '蝙', '蝠', '捕', '蛾', '蚊', '避', '锐', '铛', '蝇', '揭', '碍', '荧', '削', '喂', '哨', '挺', '斯', '甩', '踢', '枪', '防', '鬼', '汉', '滚', '毁', '惯', '牺', '牲', '凯', '征', '阿', '姨', '济', '贡', '圣', '驻', '罪', '恶', '健', '康', '径', '畅', '磕', '绊', '瞬', '弧', '翔', '权', '缤', '扰', '欲', '屈', '茁', '诊', '撼', '蹋', '限', '棚', '饰', '冠', '菊', '瞧', '率', '觅', '耸', '捣', '搬', '巢', '谐', '眠', '辛', '蚕', '桑', '昼', '绩', '塞', '鹭', '笠', '略', '辩', '奉', '违', '磅', '拴', '拖', '释', '宣', '萨', '妄', '执', '港', '澈', '壶', '缸', '罢', '苟', '绣', '挥', '徽', '聋', '哑', '昌', '妻', '刺', '绑', '扁', '鹊', '蔡', '睬', '肠', '胃', '烫', '剂', '汤', '焰', '驱', '袖', '败', '罚', '佩', '饶', '抗', '押', '锁', '狠', '膝', '肝', '脏'],
+            '5-1': ['窃', '炒', '锅', '踮', '哟', '饿', '惧', '充', '檐', '皱', '碗', '酸', '撑', '柜', '侣', '娱', '盒', '豫', '趟', '诵', '零', '编', '某', '洛', '榆', '畔', '帐', '魂', '缕', '幽', '葬', '愁', '腮', '甚', '绸', '谓', '梳', '衰', '绢', '侨', '鲸', '猪', '腭', '哺', '滤', '肚', '肺', '矮', '判', '胎', '盗', '嫌', '夹', '恙', '藕', '粘', '噪', '废', '捞', '饵', '溅', '钩', '翼', '纵', '啪', '鳃', '皎', '唇', '沮', '诱', '诫', '践', '亩', '尝', '吩', '咐', '茅', '榨', '榴', '杉', '矶', '混', '昔', '墟', '曼', '疾', '爆', '砾', '砸', '颤', '糕', '迪', '搂', '豪', '誊', '置', '司', '妙', '版', '慈', '祥', '歧', '谨', '慎', '损', '皇', '珑', '剔', '杭', '莱', '瑶', '宏', '宋', '侵', '统', '销', '瑰', '烬', '庙', '务', '葛', '吼', '腔', '崎', '岖', '尸', '斩', '坠', '雹', '仇', '恨', '眺', '丸', '崖', '岷', '典', '副', '委', '协', '宾', '泽', '奏', '诞', '钮', '瞻', '拂', '骑', '嗓', '党'],
+            '5-2': ['毯', '渲', '勒', '吟', '迂', '襟', '蹄', '貌', '拘', '羞', '涩', '跤', '偏', '涯', '晰', '伞', '抚', '绍', '疆', '陷', '牧', '蓑', '遮', '醉', '媚', '锄', '剥', '毡', '卸', '咀', '嚼', '漠', '寞', '袄', '袍', '傻', '胚', '祸', '患', '臂', '赋', '淘', '妨', '岂', '绞', '汁', '厘', '愧', '亏', '梁', '惠', '诣', '乃', '曰', '禽', '侮', '辱', '谎', '敝', '矩', '囚', '嘻', '臣', '淮', '柑', '橘', '枳', '贼', '赔', '妮', '役', '硝', '炭', '谊', '谣', '噩', '耗', '跺', '嫂', '挎', '篮', '咆', '哮', '疯', '狞', '淌', '肆', '揪', '豹', '瞪', '呻', '膛', '搀', '祭', '奠', '赵', '璧', '召', '诺', '怯', '瑟', '拒', '诸', '荆', '妒', '忌', '曹', '督', '甘', '鲁', '延', '幔', '私', '寨', '擂', '呐', '援', '丞', '擞', '绽', '扳', '咚', '监', '侄', '郎', '皆', '敛', '媳', '骚', '宗', '怜', '帕', '脊', '莞', '锦', '姹', '嫣', '暇', '颇', '尼', '艇', '叉', '艄', '翘', '舱', '姆', '祷', '雇', '哗'],
+            '6-1': ['邀', '俯', '瀑', '峭', '躯', '津', '蕴', '侠', '谧', '巷', '俏', '逗', '庞', '烘', '烤', '韵', '勤', '勉', '吻', '施', '挠', '庸', '艰', '毅', '铲', '劣', '惹', '讥', '浆', '岔', '挚', '寝', '频', '朦', '胧', '凄', '斑', '篇', '搁', '填', '怨', '掀', '唉', '裹', '魁', '梧', '淋', '撕', '霉', '虑', '悠', '仪', '歉', '溜', '嘿', '割', '晶', '莹', '蔼', '资', '矿', '赐', '竭', '滥', '胁', '睹', '嗡', '鹿', '骏', '鹰', '潺', '脂', '婴', '眷', '扭', '胯', '厨', '套', '猬', '畜', '窜', '挽', '囫', '囵', '枣', '搞', '恍', '霜', '详', '逝', '章', '咳', '嗽', '塑', '寇', '蕉', '筒', '躁', '革', '遭', '泣', '浴', '搏', '碑', '茵', '蜡', '陌', '盲', '键', '粼', '霎', '录'],
+            '6-2': ['挪', '蒸', '秧', '萎', '番', '锻', '雅', '勃', '旬', '熬', '蒜', '醋', '饺', '翡', '拌', '榛', '栗', '筝', '鞭', '麦', '寺', '逛', '籍', '屉', '怖', '瞅', '魔', '胖', '刑', '哼', '峻', '残', '匪', '窝', '啃', '舅', '鸿', '鼎', '旺', '炊', '乖', '裙', '兜', '币', '哎', '橱', '锈', '摩', '揉', '玛', '蘸', '毒', '撇', '噎', '搓', '匣', '喳', '吭', '娜', '伊', '搅', '埃', '伦', '藤', '析', '碱', '顽', '卓', '效', '蚀', '乏', '誉', '衔', '粪', '捐', '澡', '械', '逆', '玫', '域']
+        };
+
+        const allChars = Object.values(gradeChars).flat();
+
+        // 获取拼音
+        function getPinyin(char) {
+            try {
+                if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) {
+                    return pinyinPro.pinyin(char, { toneType: 'symbol' });
+                }
+            } catch (error) {
+                console.log('拼音库未加载');
+            }
+            return '';
+        }
+
+        // 生成抄字帖
+        function generateSheet() {
+            const input = document.getElementById('textInput').value.trim();
+            
+            if (!input) {
+                alert('请输入要抄写的文字！');
+                return;
+            }
+
+            const chars = input.split('').filter(char => /[\u4e00-\u9fa5]/.test(char));
+            
+            if (chars.length === 0) {
+                alert('请输入有效的汉字！');
+                return;
+            }
+
+            renderSheet(chars);
+        }
+
+        // 随机生成
+        function generateRandom() {
+            const count = parseInt(document.getElementById('randomCount').value) || 24;
+            const grade = document.getElementById('gradeSelect').value;
+
+            let charPool = grade === 'all' ? allChars : (gradeChars[grade] || allChars);
+            
+            if (charPool.length === 0) {
+                alert('所选年级字库为空！');
+                return;
+            }
+
+            const actualCount = Math.min(count, charPool.length);
+            const shuffled = [...charPool].sort(() => Math.random() - 0.5);
+            const chars = shuffled.slice(0, actualCount);
+
+            document.getElementById('textInput').value = chars.join('');
+            renderSheet(chars);
+        }
+
+        // 渲染抄字帖
+        function renderSheet(chars) {
+            const previewArea = document.getElementById('previewArea');
+            const printCols = document.getElementById('printCols').value;
+            
+            previewArea.innerHTML = '<div class="loading">正在生成抄字帖...</div>';
+            previewArea.className = 'preview-area print-cols-' + printCols;
+
+            setTimeout(() => {
+                const grid = document.createElement('div');
+                grid.className = 'copy-grid';
+
+                chars.forEach((char, index) => {
+                    const item = createCharItem(char, index);
+                    grid.appendChild(item);
+                });
+
+                previewArea.innerHTML = '';
+                previewArea.appendChild(grid);
+
+                // 延迟加载笔画
+                chars.forEach((char, index) => {
+                    setTimeout(() => initStrokeDisplay(char, index), index * 30);
+                });
+            }, 50);
+        }
+
+        // 创建单个字的项目
+        function createCharItem(char, index) {
+            const item = document.createElement('div');
+            item.className = 'char-item';
+
+            const gridType = document.getElementById('gridType').value;
+            const strokeCols = parseInt(document.getElementById('strokeCols').value) || 6;
+            const strokeRows = parseInt(document.getElementById('strokeRows').value) || 3;
+            const showPinyin = document.getElementById('showPinyin').checked;
+            const showChar = document.getElementById('showChar').checked;
+            const showStroke = document.getElementById('showStroke').checked;
+            
+            const pinyin = showPinyin ? getPinyin(char) : '';
+            
+            // 计算笔顺区域尺寸：每个格子12px + 1px gap
+            const strokeRowWidth = strokeCols * 13 - 1;
+            const strokeRowHeight = strokeRows * 13 - 1; // 固定高度
+
+            let html = '';
+            
+            if (showPinyin) {
+                html += `<div class="char-pinyin">${pinyin}</div>`;
+            }
+            
+            if (showChar) {
+                html += `<div class="char-display">${char}</div>`;
+            }
+            
+            if (showStroke) {
+                html += `<div class="stroke-row" id="stroke-row-${index}" style="width: ${strokeRowWidth}px; height: ${strokeRowHeight}px;"></div>`;
+            }
+            
+            html += `
+                <div class="practice-grid ${gridType}" id="practice-${index}">
+                    <div class="grid-line-h"></div>
+                    <div class="grid-line-v"></div>
+                </div>
+            `;
+
+            item.innerHTML = html;
+            return item;
+        }
+
+        // 初始化笔画显示
+        function initStrokeDisplay(char, index) {
+            const strokeRow = document.getElementById(`stroke-row-${index}`);
+            const practiceGrid = document.getElementById(`practice-${index}`);
+            const gridType = document.getElementById('gridType').value;
+            const showStroke = document.getElementById('showStroke').checked;
+
+            // 如果不需要显示笔顺且不是描红模式，跳过
+            if (!showStroke && gridType !== 'trace') return;
+            if (!practiceGrid) return;
+
+            // 创建临时容器获取笔画数据
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position:absolute;left:-9999px;visibility:hidden;';
+            document.body.appendChild(tempContainer);
+
+            try {
+                HanziWriter.create(tempContainer, char, {
+                    width: 50,
+                    height: 50,
+                    padding: 0,
+                    showOutline: false,
+                    showCharacter: false,
+                    onLoadCharDataSuccess: function(charData) {
+                        document.body.removeChild(tempContainer);
+                        
+                        const totalStrokes = charData.strokes.length;
+                        
+                        // 如果需要显示笔顺，生成笔顺小格子
+                        if (showStroke && strokeRow) {
+                            for (let i = 1; i <= totalStrokes; i++) {
+                                const strokeMini = document.createElement('div');
+                                strokeMini.className = 'stroke-mini';
+                                strokeMini.id = `stroke-${index}-${i}`;
+                                strokeRow.appendChild(strokeMini);
+                                
+                                // 绘制到第i笔的累积笔画
+                                drawStrokes(strokeMini, charData.strokes, i);
+                            }
+                        }
+
+                        // 如果是描红模式，在练习格中绘制完整字
+                        if (gridType === 'trace') {
+                            drawStrokes(practiceGrid, charData.strokes, totalStrokes, 0.2);
+                        }
+                    },
+                    onLoadCharDataError: function(reason) {
+                        console.log('加载失败:', char, reason);
+                        if (document.body.contains(tempContainer)) {
+                            document.body.removeChild(tempContainer);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('初始化错误:', error);
+                if (document.body.contains(tempContainer)) {
+                    document.body.removeChild(tempContainer);
+                }
+            }
+        }
+
+        // 绘制笔画到容器
+        function drawStrokes(container, strokes, strokeCount, opacity = 1) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 1024 1024');
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.style.display = 'block';
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            // 修正transform：Hanzi Writer的坐标系需要翻转并偏移
+            g.setAttribute('transform', 'scale(1, -1) translate(0, -1024)');
+
+            for (let i = 0; i < strokeCount && i < strokes.length; i++) {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', strokes[i]);
+                if (opacity < 1) {
+                    path.setAttribute('fill', `rgba(255, 107, 107, ${opacity})`);
+                } else {
+                    path.setAttribute('fill', '#333');
+                }
+                path.setAttribute('stroke', 'none');
+                g.appendChild(path);
+            }
+
+            svg.appendChild(g);
+            container.appendChild(svg);
+        }
+
+        // 打印
+        function printSheet() {
+            const previewArea = document.getElementById('previewArea');
+            if (previewArea.querySelector('.no-content')) {
+                alert('请先生成抄字帖！');
+                return;
+            }
+            window.print();
+        }
+
+        // 清空
+        function clearSheet() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('previewArea').innerHTML = '<div class="no-content">输入文字或点击"随机生成"开始制作抄字帖</div>';
+        }
+    </script>
+</body>
+</html>
+
