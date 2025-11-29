@@ -280,9 +280,9 @@
         }
 
         .stroke-mini {
-            width: 12px;
-            height: 12px;
-            border: 1px solid #ddd;
+            width: 18px;
+            height: 18px;
+            border: 1px solid #ccc;
             background: #fff;
             border-radius: 2px;
             position: relative;
@@ -303,6 +303,7 @@
             border: 1.5px solid #4CAF50;
             background: #fff;
             position: relative;
+            margin-top: auto; /* 底部对齐 */
         }
 
         .practice-grid.blank {
@@ -368,12 +369,14 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 8mm;
+                margin: 10mm;
             }
 
             body {
                 background: white;
                 padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .container {
@@ -393,15 +396,18 @@
             }
 
             .copy-grid {
-                gap: 1px;
+                gap: 0;
             }
 
-            /* 打印时每行8个字 */
+            /* 打印时默认8列 */
             .char-item {
                 width: calc(12.5%);
-                padding: 4px 2px;
-                border-bottom: 1px dashed #999;
-                border-right: 1px solid #eee;
+                padding: 3px 2px !important;
+                border-bottom: 1px dashed #666;
+                border-right: 1px solid #ddd;
+                page-break-inside: avoid;
+                justify-content: flex-start !important;
+                gap: 0 !important;
             }
 
             .char-item:nth-child(8n) {
@@ -409,63 +415,106 @@
             }
 
             .char-pinyin {
-                font-size: 8px;
-                height: 12px;
-                line-height: 12px;
+                font-size: 9px !important;
+                height: auto !important;
+                line-height: 1.2 !important;
+                color: #333 !important;
+                margin: 0 !important;
             }
 
             .char-display {
-                font-size: 16px;
+                font-size: 16px !important;
+                margin: 0 !important;
+                line-height: 1.1 !important;
+            }
+
+            .stroke-row {
+                margin: 0 !important;
+                padding: 0 !important;
+                gap: 1px !important;
             }
 
             .stroke-mini {
-                width: 8px;
-                height: 8px;
+                width: 14px !important;
+                height: 14px !important;
+                border-color: #666;
             }
 
             .practice-grid {
-                width: 24px;
-                height: 24px;
+                width: 32px !important;
+                height: 32px !important;
+                border-color: #333 !important;
+                border-width: 1px !important;
+                margin-top: auto !important; /* 底部对齐 */
+            }
+
+            .practice-grid .grid-line-h,
+            .practice-grid .grid-line-v {
+                border-color: #4CAF50 !important;
             }
 
             /* 6列布局 */
             .print-cols-6 .char-item {
                 width: calc(16.666%);
+                padding: 4px 3px !important;
             }
 
             .print-cols-6 .char-item:nth-child(8n) {
-                border-right: 1px solid #eee;
+                border-right: 1px solid #ddd;
             }
 
             .print-cols-6 .char-item:nth-child(6n) {
                 border-right: none;
             }
 
-            /* 10列布局 */
+            .print-cols-6 .char-pinyin {
+                font-size: 10px !important;
+            }
+
+            .print-cols-6 .char-display {
+                font-size: 20px !important;
+            }
+
+            .print-cols-6 .stroke-mini {
+                width: 16px !important;
+                height: 16px !important;
+            }
+
+            .print-cols-6 .practice-grid {
+                width: 38px !important;
+                height: 38px !important;
+            }
+
+            /* 10列布局 - 紧凑 */
             .print-cols-10 .char-item {
                 width: calc(10%);
+                padding: 2px 1px !important;
             }
 
             .print-cols-10 .char-item:nth-child(8n) {
-                border-right: 1px solid #eee;
+                border-right: 1px solid #ddd;
             }
 
             .print-cols-10 .char-item:nth-child(10n) {
                 border-right: none;
             }
 
-            .print-cols-10 .char-display {
-                font-size: 14px;
+            .print-cols-10 .char-pinyin {
+                font-size: 7px !important;
             }
 
-            .print-cols-10 .practice-grid {
-                width: 18px;
-                height: 18px;
+            .print-cols-10 .char-display {
+                font-size: 12px !important;
             }
 
             .print-cols-10 .stroke-mini {
-                width: 6px;
-                height: 6px;
+                width: 12px !important;
+                height: 12px !important;
+            }
+
+            .print-cols-10 .practice-grid {
+                width: 24px !important;
+                height: 24px !important;
             }
         }
 
@@ -525,6 +574,12 @@
                         <option value="trace">描红</option>
                         <option value="blank">空白</option>
                     </select>
+                </div>
+
+                <div class="option-item">
+                    <label>描红深度：</label>
+                    <input type="range" id="traceOpacity" value="40" min="10" max="80" style="width: 80px;">
+                    <span id="opacityValue">40%</span>
                 </div>
 
                 <div class="option-item">
@@ -698,9 +753,9 @@
             
             const pinyin = showPinyin ? getPinyin(char) : '';
             
-            // 计算笔顺区域尺寸：每个格子12px + 1px gap
-            const strokeRowWidth = strokeCols * 13 - 1;
-            const strokeRowHeight = strokeRows * 13 - 1; // 固定高度
+            // 计算笔顺区域尺寸：每个格子18px + 1px gap
+            const strokeRowWidth = strokeCols * 19 - 1;
+            const strokeRowHeight = strokeRows * 19 - 1; // 固定高度
 
             let html = '';
             
@@ -770,7 +825,8 @@
 
                         // 如果是描红模式，在练习格中绘制完整字
                         if (gridType === 'trace') {
-                            drawStrokes(practiceGrid, charData.strokes, totalStrokes, 0.2);
+                            const traceOpacity = parseInt(document.getElementById('traceOpacity').value) / 100;
+                            drawStrokes(practiceGrid, charData.strokes, totalStrokes, traceOpacity);
                         }
                     },
                     onLoadCharDataError: function(reason) {
@@ -831,6 +887,11 @@
             document.getElementById('textInput').value = '';
             document.getElementById('previewArea').innerHTML = '<div class="no-content">输入文字或点击"随机生成"开始制作抄字帖</div>';
         }
+
+        // 透明度滑块事件
+        document.getElementById('traceOpacity').addEventListener('input', function() {
+            document.getElementById('opacityValue').textContent = this.value + '%';
+        });
     </script>
 </body>
 </html>
