@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喵注音 - 文章拼音注音工具</title>
+    <script src="pinyin-pro.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-panel {
+            padding: 25px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .text-input {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            line-height: 1.8;
+            resize: vertical;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .text-input::placeholder {
+            color: #aaa;
+        }
+
+        .options-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-item label {
+            font-size: 14px;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .option-item input[type="number"],
+        .option-item select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 80px;
+        }
+
+        .option-item select {
+            width: auto;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(240, 147, 251, 0.4);
+        }
+
+        .btn-clear {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .preview-area {
+            padding: 30px;
+            min-height: 300px;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 18px;
+        }
+
+        .no-content::before {
+            content: '📖';
+            display: block;
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        /* 注音文章样式 */
+        .pinyin-article {
+            line-height: 2.8;
+            text-align: justify;
+        }
+
+        .pinyin-article .title {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .pinyin-article .paragraph {
+            margin-bottom: 25px;
+            text-indent: 2em;
+        }
+
+        /* Ruby 注音样式 */
+        ruby {
+            ruby-align: center;
+        }
+
+        ruby rt {
+            font-size: 0.5em;
+            color: #e74c3c;
+            font-weight: normal;
+            letter-spacing: 0;
+        }
+
+        /* 标点符号不需要注音 */
+        .punctuation {
+            display: inline;
+        }
+
+        /* 字体大小控制 */
+        .font-size-small .pinyin-article {
+            font-size: 18px;
+        }
+
+        .font-size-medium .pinyin-article {
+            font-size: 24px;
+        }
+
+        .font-size-large .pinyin-article {
+            font-size: 30px;
+        }
+
+        .font-size-xlarge .pinyin-article {
+            font-size: 36px;
+        }
+
+        /* 拼音颜色选项 */
+        .pinyin-red ruby rt {
+            color: #e74c3c;
+        }
+
+        .pinyin-blue ruby rt {
+            color: #3498db;
+        }
+
+        .pinyin-green ruby rt {
+            color: #27ae60;
+        }
+
+        .pinyin-gray ruby rt {
+            color: #7f8c8d;
+        }
+
+        /* 示例故事按钮 */
+        .example-stories {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .example-stories label {
+            font-size: 14px;
+            color: #666;
+            margin-right: 10px;
+        }
+
+        .story-btn {
+            padding: 6px 12px;
+            margin: 5px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .story-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* 页脚样式 */
+        .footer {
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-section h4 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-section li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .footer-section a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .footer-section .description {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .footer-section p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 8px 0;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #24292e;
+            color: white !important;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .github-link:hover {
+            background: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-decoration: none !important;
+        }
+
+        .footer-note {
+            color: #999;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        /* 打印样式 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .header,
+            .control-panel,
+            .footer {
+                display: none;
+            }
+
+            .preview-area {
+                padding: 15mm;
+            }
+
+            .pinyin-article {
+                font-size: 18px;
+                line-height: 3;
+            }
+
+            ruby rt {
+                color: #333 !important;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 15mm;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .options-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐱 喵注音</h1>
+            <p>把故事变成带拼音的文章，让小朋友轻松阅读！</p>
+            <a href="index.html" class="nav-link">📝 返回练字帖</a>
+        </div>
+
+        <div class="control-panel">
+            <div class="input-section">
+                <label>📖 输入文章内容：</label>
+                <textarea 
+                    id="textInput" 
+                    class="text-input" 
+                    placeholder="在这里粘贴或输入故事、文章内容...
+
+例如：
+小猫咪喜欢在阳光下睡觉。每天早上，它都会找一个温暖的地方，蜷成一团，享受阳光的温暖。"></textarea>
+            </div>
+
+            <div class="options-row">
+                <div class="option-item">
+                    <label>字体大小：</label>
+                    <select id="fontSize">
+                        <option value="small">小 (18px)</option>
+                        <option value="medium" selected>中 (24px)</option>
+                        <option value="large">大 (30px)</option>
+                        <option value="xlarge">特大 (36px)</option>
+                    </select>
+                </div>
+
+                <div class="option-item">
+                    <label>拼音颜色：</label>
+                    <select id="pinyinColor">
+                        <option value="red" selected>红色</option>
+                        <option value="blue">蓝色</option>
+                        <option value="green">绿色</option>
+                        <option value="gray">灰色</option>
+                    </select>
+                </div>
+
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox" id="showTone" checked>
+                        显示声调
+                    </label>
+                </div>
+
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox" id="splitParagraph" checked>
+                        自动分段
+                    </label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="convertToPinyin()">✨ 生成注音</button>
+                <button class="btn btn-print" onclick="printArticle()">🖨️ 打印文章</button>
+                <button class="btn btn-clear" onclick="clearAll()">🗑️ 清空</button>
+            </div>
+
+            <div class="example-stories">
+                <label>📚 示例故事：</label>
+                <button class="story-btn" onclick="loadStory('fox')">🦊 狐狸和葡萄</button>
+                <button class="story-btn" onclick="loadStory('rabbit')">🐢 龟兔赛跑</button>
+                <button class="story-btn" onclick="loadStory('crow')">🐦 乌鸦喝水</button>
+                <button class="story-btn" onclick="loadStory('poem')">🌸 静夜思</button>
+            </div>
+        </div>
+
+        <div class="preview-area font-size-medium pinyin-red" id="previewArea">
+            <div class="no-content">
+                输入文章内容后点击"生成注音"<br>
+                即可生成带拼音的文章
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>🎓 基于开源技术</h4>
+                    <ul>
+                        <li>
+                            <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">
+                                Pinyin Pro
+                            </a>
+                            <span class="description">- 专业汉字拼音转换库</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>📦 开源项目</h4>
+                    <p>
+                        本项目已在 GitHub 开源，欢迎 Star、Fork 和贡献！
+                    </p>
+                    <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer" class="github-link">
+                        <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                        GitHub: caicaicai/miaozitie
+                    </a>
+                </div>
+                <div class="footer-section">
+                    <h4>📄 许可证</h4>
+                    <p>MIT License © 2024</p>
+                    <p class="footer-note">
+                        专为小学生设计的拼音注音工具<br>
+                        让阅读变得更简单！
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // 示例故事库
+        const stories = {
+            fox: `狐狸和葡萄
+
+一只狐狸来到一个葡萄架下。葡萄架上挂满了一串串晶莹剔透的葡萄，在阳光下闪闪发光。
+
+狐狸馋得直流口水，它跳起来去够葡萄，可是葡萄太高了，够不到。它又跳了几次，还是够不到。
+
+狐狸想不出办法，只好走开了。它边走边说："这些葡萄肯定是酸的，不好吃！"
+
+这个故事告诉我们：有些人得不到想要的东西，就说那东西不好。`,
+
+            rabbit: `龟兔赛跑
+
+从前，有一只骄傲的兔子和一只慢吞吞的乌龟。
+
+有一天，兔子嘲笑乌龟走得慢。乌龟说："我们来比赛跑步吧！"兔子哈哈大笑，同意了。
+
+比赛开始了。兔子飞快地跑在前面，很快就看不见乌龟了。兔子心想："乌龟跑得那么慢，我先睡一觉吧。"于是，它躺在一棵大树下睡着了。
+
+乌龟虽然跑得慢，但是它一直坚持往前走，一步也没有停下来。
+
+当兔子醒来时，发现乌龟已经快到终点了！兔子拼命追赶，可是已经来不及了。乌龟赢得了比赛。
+
+这个故事告诉我们：骄傲使人落后，坚持就是胜利！`,
+
+            crow: `乌鸦喝水
+
+一只乌鸦口渴了，到处找水喝。它飞啊飞，终于看见一个瓶子，瓶子里有水。
+
+可是，瓶子里的水不多，瓶口又小，乌鸦怎么也喝不到水。怎么办呢？
+
+乌鸦想到了一个好办法。它看见旁边有许多小石子，就用嘴把小石子一颗一颗地衔起来，放进瓶子里。
+
+石子越放越多，瓶子里的水也越升越高。终于，水升到了瓶口，乌鸦喝到水了！
+
+这个故事告诉我们：遇到困难要多动脑筋，就能想出好办法。`,
+
+            poem: `静夜思
+
+床前明月光，疑是地上霜。
+举头望明月，低头思故乡。
+
+这是唐代诗人李白写的一首诗。诗人在一个安静的夜晚，看到窗前的月光洒在地上，就像铺了一层白霜。他抬起头看着天上的明月，不禁想起了远方的家乡。
+
+这首诗用简单的语言，表达了诗人深深的思乡之情。`
+        };
+
+        // 加载示例故事
+        function loadStory(storyKey) {
+            const story = stories[storyKey];
+            if (story) {
+                document.getElementById('textInput').value = story;
+            }
+        }
+
+        // 判断是否是标点符号
+        function isPunctuation(char) {
+            return /[，。！？、；：""''（）【】《》…—\s\n\r,.!?;:'"()\[\]<>]/.test(char);
+        }
+
+        // 判断是否是汉字
+        function isChineseChar(char) {
+            return /[\u4e00-\u9fa5]/.test(char);
+        }
+
+        // 转换为注音
+        function convertToPinyin() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                alert('请先输入文章内容！');
+                return;
+            }
+
+            const showTone = document.getElementById('showTone').checked;
+            const splitParagraph = document.getElementById('splitParagraph').checked;
+            const fontSize = document.getElementById('fontSize').value;
+            const pinyinColor = document.getElementById('pinyinColor').value;
+
+            // 获取拼音（带声调或不带）
+            const pinyinResult = pinyinPro.pinyin(text, { 
+                toneType: showTone ? 'symbol' : 'none',
+                type: 'array'
+            });
+
+            // 构建 HTML
+            let html = '<div class="pinyin-article">';
+
+            // 分段处理
+            const paragraphs = splitParagraph ? text.split(/\n+/) : [text];
+
+            paragraphs.forEach((para, paraIndex) => {
+                if (!para.trim()) return;
+
+                // 检查是否是标题（第一段且较短）
+                const isTitle = paraIndex === 0 && para.length < 20 && !para.includes('。');
+
+                html += isTitle ? '<div class="title">' : '<div class="paragraph">';
+
+                // 计算当前段落在原文中的起始位置
+                let charIndex = 0;
+                for (let i = 0; i < paraIndex; i++) {
+                    // 计算之前段落的长度（包括换行符）
+                    const prevPara = paragraphs[i];
+                    charIndex += prevPara.length;
+                    // 加上换行符的数量
+                    const match = text.substring(charIndex).match(/^\n+/);
+                    if (match) {
+                        charIndex += match[0].length;
+                    }
+                }
+
+                // 计算当前段落在原文中的实际起始索引
+                let textIndex = text.indexOf(para, paraIndex === 0 ? 0 : text.indexOf(paragraphs[paraIndex - 1]) + paragraphs[paraIndex - 1].length);
+
+                // 遍历段落中的每个字符
+                for (let i = 0; i < para.length; i++) {
+                    const char = para[i];
+                    const globalIndex = textIndex + i;
+
+                    if (isChineseChar(char)) {
+                        const py = pinyinResult[globalIndex] || '';
+                        html += `<ruby>${char}<rt>${py}</rt></ruby>`;
+                    } else if (isPunctuation(char)) {
+                        // 标点符号保持原样
+                        if (char === '\n') {
+                            html += '<br>';
+                        } else {
+                            html += `<span class="punctuation">${char}</span>`;
+                        }
+                    } else {
+                        // 其他字符（数字、字母等）
+                        html += char;
+                    }
+                }
+
+                html += '</div>';
+            });
+
+            html += '</div>';
+
+            // 更新预览区域
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = html;
+
+            // 应用样式
+            previewArea.className = `preview-area font-size-${fontSize} pinyin-${pinyinColor}`;
+        }
+
+        // 打印文章
+        function printArticle() {
+            const previewArea = document.getElementById('previewArea');
+            if (previewArea.querySelector('.no-content')) {
+                alert('请先生成注音文章！');
+                return;
+            }
+            window.print();
+        }
+
+        // 清空
+        function clearAll() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('previewArea').innerHTML = `
+                <div class="no-content">
+                    输入文章内容后点击"生成注音"<br>
+                    即可生成带拼音的文章
+                </div>
+            `;
+        }
+
+        // 监听设置变化，实时更新样式
+        document.getElementById('fontSize').addEventListener('change', function() {
+            const previewArea = document.getElementById('previewArea');
+            if (!previewArea.querySelector('.no-content')) {
+                updatePreviewStyle();
+            }
+        });
+
+        document.getElementById('pinyinColor').addEventListener('change', function() {
+            const previewArea = document.getElementById('previewArea');
+            if (!previewArea.querySelector('.no-content')) {
+                updatePreviewStyle();
+            }
+        });
+
+        function updatePreviewStyle() {
+            const fontSize = document.getElementById('fontSize').value;
+            const pinyinColor = document.getElementById('pinyinColor').value;
+            const previewArea = document.getElementById('previewArea');
+            previewArea.className = `preview-area font-size-${fontSize} pinyin-${pinyinColor}`;
+        }
+    </script>
+</body>
+</html>
+

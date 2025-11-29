@@ -48,6 +48,23 @@
             opacity: 0.9;
         }
 
+        .header .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .header .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
         .control-panel {
             padding: 30px;
             background: #f8f9fa;
@@ -568,8 +585,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🖌️ 笔画累积练字帖</h1>
+            <h1>🖌️ 喵字帖</h1>
             <p>看拼音、学笔画、练书写，一笔一划写好字</p>
+            <a href="pinyin.html" class="nav-link">📖 文章注音工具</a>
         </div>
 
         <div class="control-panel">
