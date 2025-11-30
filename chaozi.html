@@ -432,6 +432,9 @@
                 margin: 0 !important;
                 padding: 0 !important;
                 gap: 1px !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
             }
 
             .stroke-mini {
@@ -853,14 +856,14 @@
             svg.style.display = 'block';
 
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            // 修正transform：Hanzi Writer的坐标系需要翻转并偏移
-            g.setAttribute('transform', 'scale(1, -1) translate(0, -1024)');
+            // 修正transform：Hanzi Writer的坐标系需要翻转并偏移，-900 让字符居中
+            g.setAttribute('transform', 'scale(1, -1) translate(0, -900)');
 
             for (let i = 0; i < strokeCount && i < strokes.length; i++) {
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', strokes[i]);
                 if (opacity < 1) {
-                    path.setAttribute('fill', `rgba(255, 107, 107, ${opacity})`);
+                    path.setAttribute('fill', `rgba(180, 180, 180, ${opacity})`); // 灰色描红
                 } else {
                     path.setAttribute('fill', '#333');
                 }
