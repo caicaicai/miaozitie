@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -227,7 +228,8 @@
             align-items: center;
             padding: 6px 3px;
             background: #fff;
-            width: calc(12.5%); /* 8列 */
+            width: calc(12.5%);
+            /* 8列 */
             border-bottom: 1px dashed #ccc;
             border-right: 1px solid #f0f0f0;
         }
@@ -240,6 +242,7 @@
         .print-cols-6 .char-item:nth-child(8n) {
             border-right: 1px solid #f0f0f0;
         }
+
         .print-cols-6 .char-item:nth-child(6n) {
             border-right: none;
         }
@@ -247,6 +250,7 @@
         .print-cols-10 .char-item:nth-child(8n) {
             border-right: 1px solid #f0f0f0;
         }
+
         .print-cols-10 .char-item:nth-child(10n) {
             border-right: none;
         }
@@ -303,7 +307,8 @@
             border: 1.5px solid #4CAF50;
             background: #fff;
             position: relative;
-            margin-top: auto; /* 底部对齐 */
+            margin-top: auto;
+            /* 底部对齐 */
         }
 
         .practice-grid.blank {
@@ -448,7 +453,8 @@
                 height: 32px !important;
                 border-color: #333 !important;
                 border-width: 1px !important;
-                margin-top: auto !important; /* 底部对齐 */
+                margin-top: auto !important;
+                /* 底部对齐 */
             }
 
             .practice-grid .grid-line-h,
@@ -524,7 +530,8 @@
         /* 响应式 */
         @media (max-width: 768px) {
             .char-item {
-                width: calc(25% - 2px); /* 4列 */
+                width: calc(25% - 2px);
+                /* 4列 */
             }
 
             .options-row {
@@ -534,6 +541,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header class="header">
@@ -542,6 +550,7 @@
             <div class="nav-links">
                 <a href="index.html" class="nav-link">📝 笔画练习</a>
                 <a href="pinyin.html" class="nav-link">📖 文章注音</a>
+                <a href="mingtie.html" class="nav-link">🏷️ 姓名贴</a>
             </div>
         </header>
 
@@ -638,7 +647,7 @@
 
         <footer class="footer">
             <p>
-                基于 <a href="https://hanziwriter.org/" target="_blank">Hanzi Writer</a> 和 
+                基于 <a href="https://hanziwriter.org/" target="_blank">Hanzi Writer</a> 和
                 <a href="https://github.com/zh-lx/pinyin-pro" target="_blank">Pinyin Pro</a> |
                 <a href="https://github.com/caicaicai/miaozitie" target="_blank">GitHub</a>
             </p>
@@ -679,14 +688,14 @@
         // 生成抄字帖
         function generateSheet() {
             const input = document.getElementById('textInput').value.trim();
-            
+
             if (!input) {
                 alert('请输入要抄写的文字！');
                 return;
             }
 
             const chars = input.split('').filter(char => /[\u4e00-\u9fa5]/.test(char));
-            
+
             if (chars.length === 0) {
                 alert('请输入有效的汉字！');
                 return;
@@ -701,7 +710,7 @@
             const grade = document.getElementById('gradeSelect').value;
 
             let charPool = grade === 'all' ? allChars : (gradeChars[grade] || allChars);
-            
+
             if (charPool.length === 0) {
                 alert('所选年级字库为空！');
                 return;
@@ -719,7 +728,7 @@
         function renderSheet(chars) {
             const previewArea = document.getElementById('previewArea');
             const printCols = document.getElementById('printCols').value;
-            
+
             previewArea.innerHTML = '<div class="loading">正在生成抄字帖...</div>';
             previewArea.className = 'preview-area print-cols-' + printCols;
 
@@ -753,27 +762,27 @@
             const showPinyin = document.getElementById('showPinyin').checked;
             const showChar = document.getElementById('showChar').checked;
             const showStroke = document.getElementById('showStroke').checked;
-            
+
             const pinyin = showPinyin ? getPinyin(char) : '';
-            
+
             // 计算笔顺区域尺寸：每个格子18px + 1px gap
             const strokeRowWidth = strokeCols * 19 - 1;
             const strokeRowHeight = strokeRows * 19 - 1; // 固定高度
 
             let html = '';
-            
+
             if (showPinyin) {
                 html += `<div class="char-pinyin">${pinyin}</div>`;
             }
-            
+
             if (showChar) {
                 html += `<div class="char-display">${char}</div>`;
             }
-            
+
             if (showStroke) {
                 html += `<div class="stroke-row" id="stroke-row-${index}" style="width: ${strokeRowWidth}px; height: ${strokeRowHeight}px;"></div>`;
             }
-            
+
             html += `
                 <div class="practice-grid ${gridType}" id="practice-${index}">
                     <div class="grid-line-h"></div>
@@ -808,11 +817,11 @@
                     padding: 0,
                     showOutline: false,
                     showCharacter: false,
-                    onLoadCharDataSuccess: function(charData) {
+                    onLoadCharDataSuccess: function (charData) {
                         document.body.removeChild(tempContainer);
-                        
+
                         const totalStrokes = charData.strokes.length;
-                        
+
                         // 如果需要显示笔顺，生成笔顺小格子
                         if (showStroke && strokeRow) {
                             for (let i = 1; i <= totalStrokes; i++) {
@@ -820,7 +829,7 @@
                                 strokeMini.className = 'stroke-mini';
                                 strokeMini.id = `stroke-${index}-${i}`;
                                 strokeRow.appendChild(strokeMini);
-                                
+
                                 // 绘制到第i笔的累积笔画
                                 drawStrokes(strokeMini, charData.strokes, i);
                             }
@@ -832,7 +841,7 @@
                             drawStrokes(practiceGrid, charData.strokes, totalStrokes, traceOpacity);
                         }
                     },
-                    onLoadCharDataError: function(reason) {
+                    onLoadCharDataError: function (reason) {
                         console.log('加载失败:', char, reason);
                         if (document.body.contains(tempContainer)) {
                             document.body.removeChild(tempContainer);
@@ -892,10 +901,10 @@
         }
 
         // 透明度滑块事件
-        document.getElementById('traceOpacity').addEventListener('input', function() {
+        document.getElementById('traceOpacity').addEventListener('input', function () {
             document.getElementById('opacityValue').textContent = this.value + '%';
         });
     </script>
 </body>
-</html>
 
+</html>

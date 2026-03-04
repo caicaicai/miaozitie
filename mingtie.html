@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>姓名贴生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .header .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin: 0 5px;
+        }
+
+        .header .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-panel {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .options-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-item label {
+            margin: 0;
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .option-item input[type="text"] {
+            width: 150px;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .option-item input[type="number"] {
+            width: 80px;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .option-item input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #e8590c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(253, 126, 20, 0.4);
+        }
+
+        .preview-area {
+            padding: 30px;
+            min-height: 400px;
+            background: #e9ecef;
+            display: flex;
+            justify-content: center;
+        }
+
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 12mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 40mm;
+            gap: 6mm 8mm;
+            align-content: start;
+        }
+
+        .sticker {
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 4mm 5mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            background: white;
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .sticker::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid #777;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+
+        .sticker-row {
+            display: flex;
+            align-items: flex-end;
+            font-family: "KaiTi", "楷体", STKaiti, serif;
+            font-size: 15pt;
+        }
+
+        .sticker-label {
+            white-space: nowrap;
+            color: #111;
+        }
+
+        .sticker-value {
+            flex: 1;
+            border-bottom: 1.5px solid #333;
+            text-align: center;
+            color: #000;
+            padding: 0 2px 2px 2px;
+            min-width: 20px;
+            line-height: 1.2;
+            word-break: keep-all;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border-radius: 0; max-width: 100%; margin: 0; }
+            .header, .control-panel { display: none; }
+            .preview-area { padding: 0; background: none; display: flex; justify-content: flex-start; }
+            .a4-page { 
+                width: 210mm; 
+                min-height: 297mm; 
+                box-shadow: none; 
+                padding: 12mm; 
+                margin: 0; 
+                page-break-after: always;
+            }
+            @page { 
+                size: A4 portrait; 
+                margin: 0mm; 
+            }
+        }
+        
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .a4-page {
+                width: 100%;
+                grid-template-columns: repeat(auto-fill, minmax(60mm, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏷️ 姓名贴生成器</h1>
+            <p>输入班级、姓名、学号，一键生成A4打印版姓名贴</p>
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <a href="index.html" class="nav-link">📝 笔画练习</a>
+                <a href="chaozi.html" class="nav-link">✍️ 抄字模式</a>
+                <a href="pinyin.html" class="nav-link">📖 文章注音</a>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="options-group">
+                <div class="option-item">
+                    <label for="inputClass">班级：</label>
+                    <input type="text" id="inputClass" placeholder="一（2）班">
+                </div>
+                <div class="option-item">
+                    <label for="inputName">姓名：</label>
+                    <input type="text" id="inputName" placeholder="李修远">
+                </div>
+                <div class="option-item">
+                    <label for="inputId">学号：</label>
+                    <input type="text" id="inputId" placeholder="7">
+                </div>
+                <div class="option-item">
+                    <label for="inputCount">打印数量：</label>
+                    <input type="number" id="inputCount" value="21" min="1" max="100">
+                    <span style="font-size: 14px; color: #666;">（一页默认21张，3列×7行）</span>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="generateStickers()">生成姓名贴</button>
+                <button class="btn-print" onclick="window.print()">打印姓名贴</button>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <div class="a4-page" id="stickerContainer">
+                <!-- 生成的姓名贴会显示在这里 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateStickers() {
+            let stuClass = document.getElementById('inputClass').value;
+            let stuName = document.getElementById('inputName').value;
+            let stuId = document.getElementById('inputId').value;
+            let count = parseInt(document.getElementById('inputCount').value);
+            
+            if (stuClass.trim() === '') stuClass = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+            if (stuName.trim() === '') stuName = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+            if (stuId.trim() === '') stuId = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+            
+            if (isNaN(count) || count < 1) count = 21;
+
+            const container = document.getElementById('stickerContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < count; i++) {
+                const sticker = document.createElement('div');
+                sticker.className = 'sticker';
+                
+                sticker.innerHTML = `
+                    <div class="sticker-row">
+                        <span class="sticker-label">班级：</span>
+                        <span class="sticker-value">${stuClass}</span>
+                    </div>
+                    <div class="sticker-row">
+                        <span class="sticker-label">姓名：</span>
+                        <span class="sticker-value">${stuName}</span>
+                    </div>
+                    <div class="sticker-row">
+                        <span class="sticker-label">学号：</span>
+                        <span class="sticker-value">${stuId}</span>
+                    </div>
+                `;
+                
+                container.appendChild(sticker);
+            }
+        }
+
+        // 初始页面加载默认填充并生成
+        window.onload = () => {
+            document.getElementById('inputClass').value = '一（2）班';
+            document.getElementById('inputName').value = '李修远';
+            document.getElementById('inputId').value = '7';
+            generateStickers();
+        };
+    </script>
+</body>
+</html>
