@@ -1867,6 +1867,8 @@
             document.getElementById('questionDisplay').innerHTML =
                 `${q.a} <span class="op">${q.symbol}</span> ${q.b} <span class="eq">=</span>`;
 
+            speakQuestion(q);
+
             currentAnswer = '';
             updateAnswerDisplay();
             const fb = document.getElementById('feedback');
@@ -1946,6 +1948,7 @@
             if (isCorrect) {
                 correctTotal++;
                 playCorrectSound();
+                speakText('对了！', 1.2);
                 el.className = 'answer-display correct';
                 const fb = document.getElementById('feedback');
                 const cheers = ['✅ 正确！', '👍 厉害！', '🎯 答对了！', '⭐ 真棒！', '💪 继续！'];
@@ -1968,6 +1971,7 @@
                 el.className = 'answer-display wrong';
 
                 if (wrongMode === 'retry') {
+                    speakText('再想想', 1.0);
                     document.getElementById('feedback').textContent = '❌ 再想想！';
                     if (!q._wrongLogged) {
                         wrongList.push({ question: q.text, yourAnswer: userAnswer, correctAnswer: q.answer });
@@ -1982,6 +1986,7 @@
                     }, 600);
                 } else {
                     document.getElementById('feedback').textContent = `❌ 答案是 ${q.answer}`;
+                    speakText(`不对，答案是${q.answer}`, 1.0);
                     wrongList.push({ question: q.text, yourAnswer: userAnswer, correctAnswer: q.answer });
                     document.getElementById('wrongCount').textContent = wrongList.length;
 
@@ -2139,6 +2144,7 @@
 
         function getAudioCtx() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             return audioCtx;
         }
 
@@ -2152,8 +2158,8 @@
             osc.type = 'sine';
             osc.frequency.setValueAtTime(880, ctx.currentTime);
             osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.6, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
             osc.start(ctx.currentTime);
             osc.stop(ctx.currentTime + 0.3);
         }
@@ -2168,8 +2174,8 @@
             osc.type = 'square';
             osc.frequency.setValueAtTime(200, ctx.currentTime);
             osc.frequency.setValueAtTime(150, ctx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.4, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
             osc.start(ctx.currentTime);
             osc.stop(ctx.currentTime + 0.25);
         }
@@ -2182,11 +2188,31 @@
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, ctx.currentTime);
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+            osc.frequency.setValueAtTime(800, ctx.currentTime);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
             osc.start(ctx.currentTime);
             osc.stop(ctx.currentTime + 0.05);
+        }
+
+        function speakText(text, rate) {
+            if (!soundEnabled) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'zh-CN';
+            u.rate = rate || 1.1;
+            u.pitch = 1.2;
+            window.speechSynthesis.speak(u);
+        }
+
+        function speakQuestion(q) {
+            const opMap = { '+': '加', '−': '减', '×': '乘', '÷': '除以' };
+            const opWord = opMap[q.symbol] || q.symbol;
+            speakText(`${q.a} ${opWord} ${q.b} 等于几？`, 1.0);
+        }
+
+        function speakAnswer(answer) {
+            speakText(`${answer}`, 1.2);
         }
 
         function toggleSound() {
