@@ -315,7 +315,8 @@
         .answer-display.correct {
             border-color: #28a745;
             color: #28a745;
-            animation: pop 0.35s;
+            background: #e6f9ec;
+            animation: correctPop 0.45s ease-out;
         }
 
         .answer-display.wrong {
@@ -324,10 +325,11 @@
             animation: shake 0.35s;
         }
 
-        @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
+        @keyframes correctPop {
+            0% { transform: scale(1); background: #fff; }
+            35% { transform: scale(1.1); background: #d4edda; }
+            65% { transform: scale(1.02); }
+            100% { transform: scale(1); background: #e6f9ec; }
         }
 
         @keyframes shake {
@@ -338,9 +340,21 @@
 
         .feedback {
             font-size: 22px;
-            height: 32px;
-            line-height: 32px;
+            height: 40px;
+            line-height: 40px;
             margin-top: 4px;
+            transition: opacity 0.15s;
+        }
+
+        .feedback.correct-feedback {
+            font-size: 28px;
+            animation: feedbackBounce 0.45s ease-out;
+        }
+
+        @keyframes feedbackBounce {
+            0% { transform: scale(0.2); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* ===== 虚拟键盘 ===== */
@@ -712,6 +726,10 @@
             font-size: clamp(20px, 3.5vmin, 36px);
         }
 
+        .fullscreen-active .feedback.correct-feedback {
+            font-size: clamp(26px, 4.5vmin, 48px);
+        }
+
         .fullscreen-active .setup-panel {
             flex: 1;
         }
@@ -974,6 +992,7 @@
         body.eye-care .answer-display.correct {
             border-color: #6a9a60;
             color: #6a9a60;
+            background: #dde8d6;
         }
 
         body.eye-care .answer-display.wrong {
@@ -1538,7 +1557,9 @@
 
             currentAnswer = '';
             updateAnswerDisplay();
-            document.getElementById('feedback').textContent = '';
+            const fb = document.getElementById('feedback');
+            fb.textContent = '';
+            fb.className = 'feedback';
         }
 
         function updateAnswerDisplay() {
@@ -1605,18 +1626,22 @@
             if (isCorrect) {
                 correctTotal++;
                 el.className = 'answer-display correct';
-                document.getElementById('feedback').textContent = '✅ 正确！';
+                const fb = document.getElementById('feedback');
+                const cheers = ['✅ 正确！', '👍 厉害！', '🎯 答对了！', '⭐ 真棒！', '💪 继续！'];
+                fb.textContent = cheers[Math.floor(Math.random() * cheers.length)];
+                fb.className = 'feedback correct-feedback';
                 document.getElementById('correctCount').textContent = correctTotal;
 
                 setTimeout(() => {
                     isSubmitting = false;
+                    fb.className = 'feedback';
                     currentIndex++;
                     if (currentIndex < questions.length) {
                         showQuestion();
                     } else {
                         finishQuiz();
                     }
-                }, 0);
+                }, 600);
             } else {
                 el.className = 'answer-display wrong';
 
