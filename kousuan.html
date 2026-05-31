@@ -266,7 +266,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 16px 20px 10px;
+            padding: 8px 20px 4px;
             min-height: 140px;
         }
 
@@ -569,109 +569,60 @@
         body.eye-care .sidepad-bottom .sp-back { background: #e0dace; color: #4a4a3a; }
         body.eye-care .sidepad-bottom .sp-submit { background: linear-gradient(135deg, #a8c0a0, #8fb08a); }
 
-        /* ===== 语音输入面板 ===== */
-        .voice-pad {
+        /* ===== 语音状态（内联） ===== */
+        .voice-inline-status {
             display: none;
             flex-direction: column;
             align-items: center;
-            padding: 12px 12px 6px;
-            gap: 8px;
-            user-select: none;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 2px;
         }
 
-        .voice-mic-btn {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
+        .voice-inline-status #voiceResult {
+            font-size: 13px;
+            color: #888;
+            min-height: 18px;
+        }
+
+        .voice-talk-btn {
+            padding: 6px 20px;
             border: none;
+            border-radius: 20px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
-            font-size: 30px;
-            cursor: pointer;
-            touch-action: manipulation;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
-        }
-
-        .voice-mic-btn:active {
-            transform: scale(0.93);
-        }
-
-        .voice-mic-btn.listening {
-            animation: voicePulse 1.2s infinite;
-            background: linear-gradient(135deg, #28a745, #20c997);
-            box-shadow: 0 0 0 0 rgba(40,167,69,0.5);
-        }
-
-        @keyframes voicePulse {
-            0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.5); }
-            70% { box-shadow: 0 0 0 18px rgba(40,167,69,0); }
-            100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
-        }
-
-        .voice-status {
             font-size: 15px;
-            color: #666;
-            min-height: 22px;
-        }
-
-        .voice-status.active {
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        .voice-status.error {
-            color: #dc3545;
-        }
-
-        .voice-result {
-            font-size: 22px;
-            font-weight: bold;
-            color: #333;
-            min-height: 30px;
-        }
-
-        .voice-actions {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-            max-width: 300px;
-        }
-
-        .voice-actions button {
-            flex: 1;
-            padding: 10px 0;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             touch-action: manipulation;
+            transition: transform 0.2s;
         }
 
-        .voice-actions .va-skip { background: #ffc107; color: #333; }
-        .voice-actions .va-clear { background: #e9ecef; color: #495057; }
-        .voice-actions .va-submit { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
-        .voice-actions button:active { transform: scale(0.95); }
+        .voice-talk-btn:active { transform: scale(0.95); }
 
-        body.eye-care .voice-mic-btn {
+        .voice-talk-btn.listening {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            animation: voiceBtnPulse 1.2s infinite;
+        }
+
+        @keyframes voiceBtnPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(40,167,69,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(40,167,69,0); }
+        }
+
+        body.eye-care .voice-talk-btn {
             background: linear-gradient(135deg, #a8c0a0, #8fb08a);
-            box-shadow: 0 4px 15px rgba(143,176,138,0.3);
         }
 
-        body.eye-care .voice-mic-btn.listening {
+        body.eye-care .voice-talk-btn.listening {
             background: linear-gradient(135deg, #8fb08a, #6a9a60);
         }
 
-        body.eye-care .voice-status { color: #6a6a5a; }
-        body.eye-care .voice-result { color: #3a3a2a; }
-        body.eye-care .voice-actions .va-skip { background: #e0dace; color: #6a6a5a; }
-        body.eye-care .voice-actions .va-clear { background: #e0dace; color: #4a4a3a; }
-        body.eye-care .voice-actions .va-submit { background: linear-gradient(135deg, #a8c0a0, #8fb08a); }
+        body.eye-care .voice-inline-status #voiceResult { color: #8a8a7a; }
 
         /* ===== 虚拟键盘 ===== */
         .numpad {
-            padding: 8px 12px 12px;
+            padding: 4px 12px 8px;
             background: #f0f0f3;
             border-top: 1px solid #e0e0e0;
             user-select: none;
@@ -681,7 +632,7 @@
         .numpad-row {
             display: flex;
             gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
         .numpad-row:last-child {
@@ -1592,6 +1543,10 @@
                 <div class="question-display" id="questionDisplay"></div>
                 <div class="answer-display" id="answerDisplay"><span class="cursor-blink"></span></div>
                 <div class="feedback" id="feedback"></div>
+                <div class="voice-inline-status" id="voiceInlineStatus" style="display:none;">
+                    <button class="voice-talk-btn" id="voiceTalkBtn" onclick="toggleVoiceListening()">🎤 点我说话</button>
+                    <span id="voiceResult"></span>
+                </div>
             </div>
 
             <div class="numpad" id="numpad">
@@ -1657,11 +1612,6 @@
                     <button class="sp-clear" onclick="numpadClear()">清空</button>
                     <button class="sp-submit" onclick="submitAnswer()">确定</button>
                 </div>
-            </div>
-            <div class="voice-pad" id="voicePad">
-                <button class="voice-mic-btn" id="voiceMicBtn" onclick="toggleVoiceListening()">🎤</button>
-                <div class="voice-status" id="voiceStatus">点击麦克风开始说话</div>
-                <div class="voice-result" id="voiceResult"></div>
             </div>
         </div>
 
@@ -2723,8 +2673,8 @@
         function initVoiceRecognition() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SR) {
-                document.getElementById('voiceStatus').textContent = '浏览器不支持语音识别';
-                document.getElementById('voiceStatus').className = 'voice-status error';
+                document.getElementById('voiceResult').textContent = '浏览器不支持语音识别';
+                document.getElementById('voiceResult').style.color = '#dc3545';
                 return false;
             }
 
@@ -2778,13 +2728,13 @@
 
             voiceRecognition.onerror = function (e) {
                 if (e.error === 'no-speech' || e.error === 'aborted') return;
-                const statusEl = document.getElementById('voiceStatus');
+                const resultEl = document.getElementById('voiceResult');
                 if (e.error === 'not-allowed') {
-                    statusEl.textContent = '请允许麦克风权限';
+                    resultEl.textContent = '请允许麦克风权限';
                 } else {
-                    statusEl.textContent = '识别出错: ' + e.error;
+                    resultEl.textContent = '识别出错: ' + e.error;
                 }
-                statusEl.className = 'voice-status error';
+                resultEl.style.color = '#dc3545';
             };
 
             return true;
@@ -2792,18 +2742,13 @@
 
         function setVoiceListeningUI(listening) {
             voiceListening = listening;
-            const btn = document.getElementById('voiceMicBtn');
-            const status = document.getElementById('voiceStatus');
+            const btn = document.getElementById('voiceTalkBtn');
             if (listening) {
                 btn.classList.add('listening');
-                btn.textContent = '⏹';
-                status.textContent = '正在听...请说出答案';
-                status.className = 'voice-status active';
+                btn.textContent = '⏹ 正在听...';
             } else {
                 btn.classList.remove('listening');
-                btn.textContent = '🎤';
-                status.textContent = '点击麦克风开始说话';
-                status.className = 'voice-status';
+                btn.textContent = '🎤 点我说话';
             }
         }
 
@@ -2840,14 +2785,14 @@
             const numpad = document.getElementById('numpad');
             const hwPad = document.getElementById('handwritePad');
             const sidePad = document.getElementById('sidepad');
-            const voicePad = document.getElementById('voicePad');
             const quizArea = document.getElementById('quizArea');
+            const voiceStatusEl = document.getElementById('voiceInlineStatus');
 
             numpad.style.display = 'none';
             hwPad.style.display = 'none';
             sidePad.style.display = 'none';
-            voicePad.style.display = 'none';
             quizArea.classList.remove('sidepad-active');
+            voiceStatusEl.style.display = 'none';
             stopVoiceIfActive();
 
             if (inputMode === 'handwrite') {
@@ -2857,8 +2802,8 @@
                 sidePad.style.display = 'block';
                 quizArea.classList.add('sidepad-active');
             } else if (inputMode === 'voice') {
-                voicePad.style.display = 'flex';
                 numpad.style.display = 'block';
+                voiceStatusEl.style.display = 'flex';
             } else {
                 numpad.style.display = 'block';
             }
