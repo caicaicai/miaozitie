@@ -349,6 +349,7 @@
             background: #f0f0f3;
             border-top: 1px solid #e0e0e0;
             user-select: none;
+            touch-action: manipulation;
         }
 
         .numpad-row {
@@ -376,6 +377,7 @@
             background: white;
             color: #333;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            touch-action: manipulation;
         }
 
         .numpad-key:active {
@@ -608,6 +610,67 @@
             .quiz-body { min-height: 180px; }
         }
 
+        /* ===== 确认弹窗 ===== */
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confirm-overlay.show {
+            display: flex;
+        }
+
+        .confirm-dialog {
+            background: white;
+            border-radius: 16px;
+            padding: 24px 20px 18px;
+            width: 280px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+        }
+
+        .confirm-msg {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn:active {
+            transform: scale(0.96);
+        }
+
+        .confirm-cancel {
+            background: #e9ecef;
+            color: #555;
+        }
+
+        .confirm-ok {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
         /* ===== 全屏模式 ===== */
         .fullscreen-active .header,
         .fullscreen-active .footer {
@@ -629,6 +692,24 @@
 
         .fullscreen-active .quiz-body {
             flex: 1;
+            justify-content: center;
+        }
+
+        .fullscreen-active .question-display {
+            font-size: clamp(42px, 8vmin, 96px);
+        }
+
+        .fullscreen-active .answer-display {
+            font-size: clamp(36px, 7vmin, 84px);
+            min-height: clamp(50px, 8vmin, 100px);
+        }
+
+        .fullscreen-active .answer-display .cursor-blink {
+            height: clamp(34px, 6vmin, 76px);
+        }
+
+        .fullscreen-active .feedback {
+            font-size: clamp(20px, 3.5vmin, 36px);
         }
 
         .fullscreen-active .setup-panel {
@@ -715,6 +796,7 @@
             justify-content: center;
             transition: all 0.2s;
             padding: 0;
+            touch-action: manipulation;
         }
 
         .quiz-action-btn:hover {
@@ -944,6 +1026,17 @@
                 <button class="btn-retry" onclick="retryQuiz()">再来一次</button>
                 <button class="btn-back" onclick="backToSetup()">返回设置</button>
                 <button class="btn-back" id="btnExitFs" onclick="toggleFullscreen()" style="display:none;">退出全屏</button>
+            </div>
+        </div>
+
+        <!-- 自定义确认弹窗 -->
+        <div class="confirm-overlay" id="confirmOverlay">
+            <div class="confirm-dialog">
+                <div class="confirm-msg" id="confirmMsg"></div>
+                <div class="confirm-buttons">
+                    <button class="confirm-btn confirm-cancel" onclick="closeConfirm()">取消</button>
+                    <button class="confirm-btn confirm-ok" id="confirmOk">确定</button>
+                </div>
             </div>
         </div>
 
@@ -1406,18 +1499,34 @@
             document.getElementById('setupPanel').style.display = 'block';
         }
 
+        // ===== 自定义确认弹窗 =====
+        function showConfirm(msg, onOk) {
+            document.getElementById('confirmMsg').textContent = msg;
+            const overlay = document.getElementById('confirmOverlay');
+            overlay.classList.add('show');
+            const okBtn = document.getElementById('confirmOk');
+            okBtn.onclick = function () {
+                overlay.classList.remove('show');
+                onOk();
+            };
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmOverlay').classList.remove('show');
+        }
+
         // ===== 答题中操作 =====
         function confirmRestart() {
-            if (confirm('确定要重新开始吗？当前进度将清零。')) {
+            showConfirm('确定要重新开始吗？当前进度将清零。', function () {
                 clearInterval(timerInterval);
                 startQuiz();
-            }
+            });
         }
 
         function confirmBack() {
-            if (confirm('确定要退出吗？当前进度将丢失。')) {
+            showConfirm('确定要退出吗？当前进度将丢失。', function () {
                 backToSetup();
-            }
+            });
         }
 
         // ===== 全屏 =====
