@@ -569,6 +569,106 @@
         body.eye-care .sidepad-bottom .sp-back { background: #e0dace; color: #4a4a3a; }
         body.eye-care .sidepad-bottom .sp-submit { background: linear-gradient(135deg, #a8c0a0, #8fb08a); }
 
+        /* ===== 语音输入面板 ===== */
+        .voice-pad {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 12px;
+            gap: 12px;
+            user-select: none;
+        }
+
+        .voice-mic-btn {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-size: 40px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+
+        .voice-mic-btn:active {
+            transform: scale(0.93);
+        }
+
+        .voice-mic-btn.listening {
+            animation: voicePulse 1.2s infinite;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            box-shadow: 0 0 0 0 rgba(40,167,69,0.5);
+        }
+
+        @keyframes voicePulse {
+            0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.5); }
+            70% { box-shadow: 0 0 0 18px rgba(40,167,69,0); }
+            100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+        }
+
+        .voice-status {
+            font-size: 15px;
+            color: #666;
+            min-height: 22px;
+        }
+
+        .voice-status.active {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .voice-status.error {
+            color: #dc3545;
+        }
+
+        .voice-result {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            min-height: 30px;
+        }
+
+        .voice-actions {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .voice-actions button {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .voice-actions .va-skip { background: #ffc107; color: #333; }
+        .voice-actions .va-clear { background: #e9ecef; color: #495057; }
+        .voice-actions .va-submit { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .voice-actions button:active { transform: scale(0.95); }
+
+        body.eye-care .voice-mic-btn {
+            background: linear-gradient(135deg, #a8c0a0, #8fb08a);
+            box-shadow: 0 4px 15px rgba(143,176,138,0.3);
+        }
+
+        body.eye-care .voice-mic-btn.listening {
+            background: linear-gradient(135deg, #8fb08a, #6a9a60);
+        }
+
+        body.eye-care .voice-status { color: #6a6a5a; }
+        body.eye-care .voice-result { color: #3a3a2a; }
+        body.eye-care .voice-actions .va-skip { background: #e0dace; color: #6a6a5a; }
+        body.eye-care .voice-actions .va-clear { background: #e0dace; color: #4a4a3a; }
+        body.eye-care .voice-actions .va-submit { background: linear-gradient(135deg, #a8c0a0, #8fb08a); }
+
         /* ===== 虚拟键盘 ===== */
         .numpad {
             padding: 8px 12px 12px;
@@ -1434,6 +1534,7 @@
                             <option value="numpad" selected>虚拟键盘</option>
                             <option value="sidepad">侧边键盘</option>
                             <option value="handwrite">手写识别 ✍️</option>
+                            <option value="voice">语音输入 🎤</option>
                         </select>
                     </div>
                     <div class="setup-item">
@@ -1554,6 +1655,16 @@
                     <button class="sp-back" onclick="numpadBack()">⌫</button>
                     <button class="sp-clear" onclick="numpadClear()">清空</button>
                     <button class="sp-submit" onclick="submitAnswer()">确定</button>
+                </div>
+            </div>
+            <div class="voice-pad" id="voicePad">
+                <div class="voice-status" id="voiceStatus">点击麦克风开始说话</div>
+                <button class="voice-mic-btn" id="voiceMicBtn" onclick="toggleVoiceListening()">🎤</button>
+                <div class="voice-result" id="voiceResult"></div>
+                <div class="voice-actions">
+                    <button class="va-skip" id="voiceKeySkip" onclick="skipQuestion()">跳过</button>
+                    <button class="va-clear" onclick="voiceClear()">清空</button>
+                    <button class="va-submit" onclick="submitAnswer()">确定</button>
                 </div>
             </div>
         </div>
@@ -1838,6 +1949,7 @@
             document.getElementById('keySkip').textContent = skipText;
             document.getElementById('hwKeySkip').textContent = skipText;
             document.getElementById('spKeySkip').textContent = skipText;
+            document.getElementById('voiceKeySkip').textContent = skipText;
 
             switchInputUI();
 
@@ -1880,6 +1992,13 @@
                 hwCtx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
                 hwHasStroke = false;
                 document.getElementById('hwHint').style.opacity = '1';
+            }
+
+            if (inputMode === 'voice') {
+                document.getElementById('voiceResult').textContent = '';
+                if (!voiceListening) {
+                    setTimeout(() => { toggleVoiceListening(); }, 800);
+                }
             }
         }
 
@@ -2043,6 +2162,7 @@
 
         function finishQuiz() {
             clearInterval(timerInterval);
+            stopVoiceIfActive();
             updateTimer();
 
             document.getElementById('quizArea').style.display = 'none';
@@ -2093,6 +2213,7 @@
 
         function backToSetup() {
             clearInterval(timerInterval);
+            stopVoiceIfActive();
             document.getElementById('quizArea').style.display = 'none';
             document.getElementById('resultArea').style.display = 'none';
             document.getElementById('setupPanel').style.display = 'block';
@@ -2534,16 +2655,181 @@
 
         // ===== 切换输入模式 =====
 
+        // ===== 语音输入 =====
+        let voiceRecognition = null;
+        let voiceListening = false;
+
+        const chineseDigitMap = {
+            '零': 0, '〇': 0, '一': 1, '壹': 1, '二': 2, '贰': 2, '两': 2,
+            '三': 3, '叁': 3, '四': 4, '肆': 4, '五': 5, '伍': 5,
+            '六': 6, '陆': 6, '七': 7, '柒': 7, '八': 8, '捌': 8,
+            '九': 9, '玖': 9, '十': 10, '拾': 10, '百': 100, '佰': 100,
+            '千': 1000, '仟': 1000
+        };
+
+        function chineseToNumber(str) {
+            str = str.trim();
+            const direct = parseInt(str);
+            if (!isNaN(direct)) return direct;
+
+            let isNeg = false;
+            if (str.startsWith('负') || str.startsWith('减')) {
+                isNeg = true;
+                str = str.substring(1);
+            }
+
+            let result = 0;
+            let current = 0;
+            let lastUnit = 1;
+
+            for (let i = 0; i < str.length; i++) {
+                const ch = str[i];
+                const val = chineseDigitMap[ch];
+                if (val === undefined) continue;
+
+                if (val >= 10) {
+                    if (current === 0 && val === 10 && result === 0) current = 1;
+                    result += current * val;
+                    current = 0;
+                    lastUnit = val;
+                } else {
+                    current = val;
+                }
+            }
+            result += current;
+
+            return isNeg ? -result : result;
+        }
+
+        function initVoiceRecognition() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                document.getElementById('voiceStatus').textContent = '浏览器不支持语音识别';
+                document.getElementById('voiceStatus').className = 'voice-status error';
+                return false;
+            }
+
+            voiceRecognition = new SR();
+            voiceRecognition.lang = 'zh-CN';
+            voiceRecognition.continuous = false;
+            voiceRecognition.interimResults = true;
+            voiceRecognition.maxAlternatives = 5;
+
+            voiceRecognition.onresult = function (e) {
+                if (isSubmitting) return;
+                let bestNum = null;
+                const resultEl = document.getElementById('voiceResult');
+
+                for (let i = 0; i < e.results.length; i++) {
+                    for (let j = 0; j < e.results[i].length; j++) {
+                        const text = e.results[i][j].transcript.trim();
+                        const num = chineseToNumber(text);
+                        if (!isNaN(num)) {
+                            bestNum = num;
+                            break;
+                        }
+                    }
+                    if (bestNum !== null) break;
+                }
+
+                if (bestNum !== null) {
+                    currentAnswer = String(bestNum);
+                    updateAnswerDisplay();
+                    resultEl.textContent = `识别: ${bestNum}`;
+
+                    if (e.results[0].isFinal) {
+                        const q = questions[currentIndex];
+                        if (bestNum === q.answer) {
+                            submitAnswer();
+                        }
+                    }
+                } else {
+                    const raw = e.results[0][0].transcript;
+                    resultEl.textContent = `听到: ${raw}`;
+                }
+            };
+
+            voiceRecognition.onend = function () {
+                if (voiceListening && !isSubmitting) {
+                    try { voiceRecognition.start(); } catch (e) {}
+                } else {
+                    setVoiceListeningUI(false);
+                }
+            };
+
+            voiceRecognition.onerror = function (e) {
+                if (e.error === 'no-speech' || e.error === 'aborted') return;
+                const statusEl = document.getElementById('voiceStatus');
+                if (e.error === 'not-allowed') {
+                    statusEl.textContent = '请允许麦克风权限';
+                } else {
+                    statusEl.textContent = '识别出错: ' + e.error;
+                }
+                statusEl.className = 'voice-status error';
+            };
+
+            return true;
+        }
+
+        function setVoiceListeningUI(listening) {
+            voiceListening = listening;
+            const btn = document.getElementById('voiceMicBtn');
+            const status = document.getElementById('voiceStatus');
+            if (listening) {
+                btn.classList.add('listening');
+                btn.textContent = '⏹';
+                status.textContent = '正在听...请说出答案';
+                status.className = 'voice-status active';
+            } else {
+                btn.classList.remove('listening');
+                btn.textContent = '🎤';
+                status.textContent = '点击麦克风开始说话';
+                status.className = 'voice-status';
+            }
+        }
+
+        function toggleVoiceListening() {
+            if (!voiceRecognition && !initVoiceRecognition()) return;
+
+            if (voiceListening) {
+                voiceListening = false;
+                voiceRecognition.stop();
+                setVoiceListeningUI(false);
+            } else {
+                voiceListening = true;
+                setVoiceListeningUI(true);
+                document.getElementById('voiceResult').textContent = '';
+                try { voiceRecognition.start(); } catch (e) {}
+            }
+        }
+
+        function voiceClear() {
+            currentAnswer = '';
+            updateAnswerDisplay();
+            document.getElementById('voiceResult').textContent = '';
+        }
+
+        function stopVoiceIfActive() {
+            if (voiceListening && voiceRecognition) {
+                voiceListening = false;
+                voiceRecognition.stop();
+                setVoiceListeningUI(false);
+            }
+        }
+
         function switchInputUI() {
             const numpad = document.getElementById('numpad');
             const hwPad = document.getElementById('handwritePad');
             const sidePad = document.getElementById('sidepad');
+            const voicePad = document.getElementById('voicePad');
             const quizArea = document.getElementById('quizArea');
 
             numpad.style.display = 'none';
             hwPad.style.display = 'none';
             sidePad.style.display = 'none';
+            voicePad.style.display = 'none';
             quizArea.classList.remove('sidepad-active');
+            stopVoiceIfActive();
 
             if (inputMode === 'handwrite') {
                 hwPad.style.display = 'flex';
@@ -2551,6 +2837,8 @@
             } else if (inputMode === 'sidepad') {
                 sidePad.style.display = 'block';
                 quizArea.classList.add('sidepad-active');
+            } else if (inputMode === 'voice') {
+                voicePad.style.display = 'flex';
             } else {
                 numpad.style.display = 'block';
             }
