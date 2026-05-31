@@ -574,19 +574,19 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            padding: 20px 12px;
-            gap: 12px;
+            padding: 12px 12px 6px;
+            gap: 8px;
             user-select: none;
         }
 
         .voice-mic-btn {
-            width: 90px;
-            height: 90px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             border: none;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: #fff;
-            font-size: 40px;
+            font-size: 30px;
             cursor: pointer;
             touch-action: manipulation;
             transition: transform 0.2s, box-shadow 0.2s;
@@ -1575,6 +1575,7 @@
                     <span class="quiz-stat-value timer-value" id="timerDisplay">00:00</span>
                 </div>
                 <div class="quiz-actions">
+                    <button class="quiz-action-btn" onclick="cycleInputMode()" id="btnInputModeQuiz" title="切换输入">⌨</button>
                     <button class="quiz-action-btn" onclick="toggleSound()" id="btnSoundQuiz" title="音效">🔇</button>
                     <button class="quiz-action-btn" onclick="toggleEyeCare()" id="btnEyeCareQuiz" title="护眼模式">🌿</button>
                     <button class="quiz-action-btn" id="btnToggleFs" onclick="toggleFullscreen()" title="全屏">⛶</button>
@@ -1658,14 +1659,9 @@
                 </div>
             </div>
             <div class="voice-pad" id="voicePad">
-                <div class="voice-status" id="voiceStatus">点击麦克风开始说话</div>
                 <button class="voice-mic-btn" id="voiceMicBtn" onclick="toggleVoiceListening()">🎤</button>
+                <div class="voice-status" id="voiceStatus">点击麦克风开始说话</div>
                 <div class="voice-result" id="voiceResult"></div>
-                <div class="voice-actions">
-                    <button class="va-skip" id="voiceKeySkip" onclick="skipQuestion()">跳过</button>
-                    <button class="va-clear" onclick="voiceClear()">清空</button>
-                    <button class="va-submit" onclick="submitAnswer()">确定</button>
-                </div>
             </div>
         </div>
 
@@ -1949,8 +1945,8 @@
             document.getElementById('keySkip').textContent = skipText;
             document.getElementById('hwKeySkip').textContent = skipText;
             document.getElementById('spKeySkip').textContent = skipText;
-            document.getElementById('voiceKeySkip').textContent = skipText;
 
+            updateInputModeBtn();
             switchInputUI();
 
             if (inputMode === 'handwrite') {
@@ -2413,6 +2409,29 @@
             if (inputMode === 'handwrite') {
                 initHandwriteModel();
             }
+            updateInputModeBtn();
+        }
+
+        const inputModes = ['numpad', 'sidepad', 'handwrite', 'voice'];
+        const inputModeIcons = { numpad: '⌨', sidepad: '⫼', handwrite: '✍', voice: '🎤' };
+        const inputModeNames = { numpad: '虚拟键盘', sidepad: '侧边键盘', handwrite: '手写识别', voice: '语音输入' };
+
+        function cycleInputMode() {
+            const idx = inputModes.indexOf(inputMode);
+            const nextIdx = (idx + 1) % inputModes.length;
+            inputMode = inputModes[nextIdx];
+            document.getElementById('inputMode').value = inputMode;
+            if (inputMode === 'handwrite') initHandwriteModel();
+            updateInputModeBtn();
+            switchInputUI();
+        }
+
+        function updateInputModeBtn() {
+            const btn = document.getElementById('btnInputModeQuiz');
+            if (btn) {
+                btn.textContent = inputModeIcons[inputMode] || '⌨';
+                btn.title = inputModeNames[inputMode] || '切换输入';
+            }
         }
 
         async function initHandwriteModel() {
@@ -2737,11 +2756,11 @@
                     updateAnswerDisplay();
                     resultEl.textContent = `识别: ${bestNum}`;
 
-                    if (e.results[0].isFinal) {
-                        const q = questions[currentIndex];
-                        if (bestNum === q.answer) {
-                            submitAnswer();
-                        }
+                    const q = questions[currentIndex];
+                    if (bestNum === q.answer) {
+                        submitAnswer();
+                    } else if (e.results[0].isFinal) {
+                        submitAnswer();
                     }
                 } else {
                     const raw = e.results[0][0].transcript;
@@ -2839,6 +2858,7 @@
                 quizArea.classList.add('sidepad-active');
             } else if (inputMode === 'voice') {
                 voicePad.style.display = 'flex';
+                numpad.style.display = 'block';
             } else {
                 numpad.style.display = 'block';
             }
