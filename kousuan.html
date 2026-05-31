@@ -1450,6 +1450,7 @@
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button class="btn-fullscreen" onclick="toggleFullscreen()" style="flex:1; margin-top:0;">⛶ 全屏模式</button>
                 <button class="btn-fullscreen" onclick="toggleEyeCare()" id="btnEyeCareSetup" style="flex:1; margin-top:0;">🌿 护眼模式</button>
+                <button class="btn-fullscreen" onclick="toggleSound()" id="btnSoundSetup" style="flex:1; margin-top:0;">🔇 音效关闭</button>
             </div>
         </div>
 
@@ -1473,6 +1474,7 @@
                     <span class="quiz-stat-value timer-value" id="timerDisplay">00:00</span>
                 </div>
                 <div class="quiz-actions">
+                    <button class="quiz-action-btn" onclick="toggleSound()" id="btnSoundQuiz" title="音效">🔇</button>
                     <button class="quiz-action-btn" onclick="toggleEyeCare()" id="btnEyeCareQuiz" title="护眼模式">🌿</button>
                     <button class="quiz-action-btn" id="btnToggleFs" onclick="toggleFullscreen()" title="全屏">⛶</button>
                     <button class="quiz-action-btn" onclick="confirmRestart()" title="重新开始">↻</button>
@@ -1893,6 +1895,7 @@
 
         function numpadInput(ch) {
             if (isSubmitting) return;
+            playClickSound();
             if (ch === '-') {
                 if (currentAnswer === '') {
                     currentAnswer = '-';
@@ -1942,6 +1945,7 @@
 
             if (isCorrect) {
                 correctTotal++;
+                playCorrectSound();
                 el.className = 'answer-display correct';
                 const fb = document.getElementById('feedback');
                 const cheers = ['✅ 正确！', '👍 厉害！', '🎯 答对了！', '⭐ 真棒！', '💪 继续！'];
@@ -1960,6 +1964,7 @@
                     }
                 }, 600);
             } else {
+                playWrongSound();
                 el.className = 'answer-display wrong';
 
                 if (wrongMode === 'retry') {
@@ -2123,6 +2128,76 @@
             document.body.classList.toggle('eye-care');
             const isOn = document.body.classList.contains('eye-care');
             document.getElementById('btnEyeCareSetup').textContent = isOn ? '🌿 护眼已开' : '🌿 护眼模式';
+        }
+
+        document.body.classList.add('eye-care');
+        document.getElementById('btnEyeCareSetup').textContent = '🌿 护眼已开';
+
+        // ===== 音效 =====
+        let soundEnabled = false;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playCorrectSound() {
+            if (!soundEnabled) return;
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        }
+
+        function playWrongSound() {
+            if (!soundEnabled) return;
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(200, ctx.currentTime);
+            osc.frequency.setValueAtTime(150, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.25);
+        }
+
+        function playClickSound() {
+            if (!soundEnabled) return;
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.05);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btnSoundSetup').textContent = soundEnabled ? '🔊 音效开启' : '🔇 音效关闭';
+            document.getElementById('btnSoundQuiz').textContent = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('btnSoundQuiz').title = soundEnabled ? '关闭音效' : '开启音效';
+            if (soundEnabled) {
+                getAudioCtx();
+                playClickSound();
+            }
         }
 
         // ===== 全屏 =====
