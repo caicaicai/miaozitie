@@ -696,8 +696,34 @@
             display: flex;
         }
 
-        .quiz-top-bar {
-            position: relative;
+        .quiz-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .quiz-action-btn {
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.05);
+            color: #999;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .quiz-action-btn:hover {
+            background: rgba(0,0,0,0.1);
+            color: #666;
+        }
+
+        .quiz-action-btn:active {
+            transform: scale(0.92);
         }
 
         @media print {
@@ -749,6 +775,11 @@
                             <option value="20" selected>20题</option>
                             <option value="30">30题</option>
                             <option value="50">50题</option>
+                            <option value="100">100题</option>
+                            <option value="200">200题</option>
+                            <option value="300">300题</option>
+                            <option value="500">500题</option>
+                            <option value="1000">1000题</option>
                         </select>
                     </div>
                 </div>
@@ -824,7 +855,6 @@
         <!-- 答题区域 -->
         <div class="quiz-area" id="quizArea">
             <div class="quiz-top-bar">
-                <button class="exit-fullscreen-btn" onclick="toggleFullscreen()" title="退出全屏">✕</button>
                 <div class="quiz-stat">
                     <span class="quiz-stat-label">进度</span>
                     <span class="quiz-stat-value" id="progressText">1/20</span>
@@ -840,6 +870,11 @@
                 <div class="quiz-stat">
                     <span class="quiz-stat-label">用时</span>
                     <span class="quiz-stat-value timer-value" id="timerDisplay">00:00</span>
+                </div>
+                <div class="quiz-actions">
+                    <button class="quiz-action-btn" id="btnToggleFs" onclick="toggleFullscreen()" title="全屏">⛶</button>
+                    <button class="quiz-action-btn" onclick="confirmRestart()" title="重新开始">↻</button>
+                    <button class="quiz-action-btn" onclick="confirmBack()" title="返回设置">✕</button>
                 </div>
             </div>
 
@@ -1371,6 +1406,20 @@
             document.getElementById('setupPanel').style.display = 'block';
         }
 
+        // ===== 答题中操作 =====
+        function confirmRestart() {
+            if (confirm('确定要重新开始吗？当前进度将清零。')) {
+                clearInterval(timerInterval);
+                startQuiz();
+            }
+        }
+
+        function confirmBack() {
+            if (confirm('确定要退出吗？当前进度将丢失。')) {
+                backToSetup();
+            }
+        }
+
         // ===== 全屏 =====
         function toggleFullscreen() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -1388,6 +1437,11 @@
             document.querySelector('.container').classList.toggle('fullscreen-active', isFs);
             document.body.classList.toggle('is-fullscreen', isFs);
             document.getElementById('btnExitFs').style.display = isFs ? '' : 'none';
+            const fsBtn = document.getElementById('btnToggleFs');
+            if (fsBtn) {
+                fsBtn.textContent = isFs ? '⛶' : '⛶';
+                fsBtn.title = isFs ? '退出全屏' : '全屏';
+            }
         }
 
         document.addEventListener('fullscreenchange', onFullscreenChange);
