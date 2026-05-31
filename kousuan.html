@@ -1566,6 +1566,15 @@
                 currentAnswer += ch;
             }
             updateAnswerDisplay();
+            autoCheckAnswer();
+        }
+
+        function autoCheckAnswer() {
+            if (currentAnswer === '' || currentAnswer === '-') return;
+            const q = questions[currentIndex];
+            if (parseInt(currentAnswer) === q.answer) {
+                submitAnswer();
+            }
         }
 
         function numpadBack() {
