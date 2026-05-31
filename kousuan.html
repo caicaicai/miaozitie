@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>口算速练 - 喵字帖</title>
+    <script src="tf.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -355,6 +356,104 @@
             0% { transform: scale(0.2); opacity: 0; }
             50% { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ===== 手写画板 ===== */
+        .handwrite-pad {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 12px 12px;
+            background: #f0f0f3;
+            border-top: 1px solid #e0e0e0;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .handwrite-canvas-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+            aspect-ratio: 1;
+            margin-bottom: 8px;
+        }
+
+        .handwrite-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            border: 2px solid #ccc;
+            background: #fff;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .handwrite-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 24px;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .handwrite-actions {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .handwrite-actions button {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .hw-btn-clear {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .hw-btn-undo {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .hw-btn-confirm {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .hw-btn-skip {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .handwrite-actions button:active {
+            transform: scale(0.96);
+        }
+
+        .hw-model-status {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .hw-model-status.loading {
+            color: #e67e22;
+        }
+
+        .hw-model-status.ready {
+            color: #28a745;
         }
 
         /* ===== 虚拟键盘 ===== */
@@ -891,6 +990,25 @@
             .numpad-key.key-skip { font-size: 13px; }
             .numpad-key.key-clear { font-size: 13px; }
 
+            .handwrite-pad {
+                width: 280px;
+                flex-shrink: 0;
+                justify-content: center;
+                padding: 4px 6px;
+                border-top: none;
+                border-left: 1px solid #e0e0e0;
+            }
+
+            .handwrite-canvas-wrap {
+                max-width: 200px;
+                margin-bottom: 4px;
+            }
+
+            .handwrite-actions button {
+                padding: 6px 0;
+                font-size: 14px;
+            }
+
             .question-display { font-size: 36px; margin-bottom: 4px; }
             .answer-display { font-size: 32px; min-height: 42px; }
             .answer-display .cursor-blink { height: 28px; }
@@ -970,6 +1088,30 @@
         body.eye-care .numpad-key.key-negative {
             background: #d8e8d8;
             color: #4a7a4a;
+        }
+
+        body.eye-care .handwrite-pad {
+            background: #e8e2d4;
+        }
+
+        body.eye-care .handwrite-canvas {
+            background: #faf6ee;
+            border-color: #c0b8a0;
+        }
+
+        body.eye-care .hw-btn-clear,
+        body.eye-care .hw-btn-undo {
+            background: #e0dace;
+            color: #4a4a3a;
+        }
+
+        body.eye-care .hw-btn-confirm {
+            background: linear-gradient(135deg, #a8c0a0 0%, #8fb08a 100%);
+        }
+
+        body.eye-care .hw-btn-skip {
+            background: #e0dace;
+            color: #6a6a5a;
         }
 
         body.eye-care .question-display {
@@ -1174,6 +1316,13 @@
                 <div class="setup-section-title">答题模式</div>
                 <div class="setup-row">
                     <div class="setup-item">
+                        <label>输入方式：</label>
+                        <select id="inputMode" onchange="onInputModeChange()">
+                            <option value="numpad" selected>虚拟键盘</option>
+                            <option value="handwrite">手写识别 ✍️</option>
+                        </select>
+                    </div>
+                    <div class="setup-item">
                         <label>错题处理：</label>
                         <select id="wrongMode">
                             <option value="skip" selected>显示答案，继续下一题</option>
@@ -1252,6 +1401,20 @@
                     <button class="numpad-key key-skip" id="keySkip" onclick="skipQuestion()">跳过</button>
                     <button class="numpad-key key-clear" onclick="numpadClear()">清空</button>
                     <button class="numpad-key key-submit" onclick="submitAnswer()">确定</button>
+                </div>
+            </div>
+
+            <div class="handwrite-pad" id="handwritePad">
+                <div class="hw-model-status" id="hwModelStatus">模型加载中...</div>
+                <div class="handwrite-canvas-wrap">
+                    <canvas class="handwrite-canvas" id="hwCanvas"></canvas>
+                    <div class="handwrite-hint" id="hwHint">在此写数字</div>
+                </div>
+                <div class="handwrite-actions">
+                    <button class="hw-btn-skip" id="hwKeySkip" onclick="skipQuestion()">跳过</button>
+                    <button class="hw-btn-undo" onclick="hwUndo()">⌫</button>
+                    <button class="hw-btn-clear" onclick="hwClearCanvas()">清空</button>
+                    <button class="hw-btn-confirm" onclick="submitAnswer()">确定</button>
                 </div>
             </div>
         </div>
@@ -1518,6 +1681,7 @@
 
         function startQuiz() {
             generateQuestions();
+            inputMode = document.getElementById('inputMode').value;
             currentIndex = 0;
             correctTotal = 0;
             wrongList = [];
@@ -1532,6 +1696,13 @@
             const showNeg = allowNegative;
             document.getElementById('keyNegative').style.visibility = showNeg ? 'visible' : 'hidden';
             document.getElementById('keySkip').textContent = wrongMode === 'retry' ? '提示' : '跳过';
+            document.getElementById('hwKeySkip').textContent = wrongMode === 'retry' ? '提示' : '跳过';
+
+            switchInputUI();
+
+            if (inputMode === 'handwrite') {
+                initHandwriteModel();
+            }
 
             startTime = Date.now();
             timerInterval = setInterval(updateTimer, 1000);
@@ -1560,6 +1731,13 @@
             const fb = document.getElementById('feedback');
             fb.textContent = '';
             fb.className = 'feedback';
+
+            if (inputMode === 'handwrite' && hwCtx) {
+                const canvas = document.getElementById('hwCanvas');
+                hwCtx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+                hwHasStroke = false;
+                document.getElementById('hwHint').style.opacity = '1';
+            }
         }
 
         function updateAnswerDisplay() {
@@ -1844,6 +2022,278 @@
             else if (e.key === 'Escape') { numpadClear(); e.preventDefault(); }
             else if (e.key === '-') { numpadInput('-'); e.preventDefault(); }
         });
+
+        // ===== 手写识别模块 =====
+
+        let inputMode = 'numpad';
+        let hwModel = null;
+        let hwModelReady = false;
+        let hwIsDrawing = false;
+        let hwCtx = null;
+        let hwLastPoint = null;
+        let hwHasStroke = false;
+        let hwRecognizeTimer = null;
+
+        function onInputModeChange() {
+            inputMode = document.getElementById('inputMode').value;
+            if (inputMode === 'handwrite') {
+                initHandwriteModel();
+            }
+        }
+
+        async function initHandwriteModel() {
+            if (hwModelReady) return;
+            const statusEl = document.getElementById('hwModelStatus');
+            statusEl.textContent = '正在加载识别模型...';
+            statusEl.className = 'hw-model-status loading';
+
+            try {
+                hwModel = await tf.loadLayersModel('mnist-model/model.json');
+                hwModelReady = true;
+                statusEl.textContent = '✅ 模型就绪';
+                statusEl.className = 'hw-model-status ready';
+                setTimeout(() => { statusEl.style.display = 'none'; }, 1500);
+            } catch (err) {
+                statusEl.textContent = '❌ 模型加载失败: ' + err.message;
+                console.error(err);
+            }
+        }
+
+        // ===== Canvas 绘制 =====
+
+        function initHwCanvas() {
+            const canvas = document.getElementById('hwCanvas');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            hwCtx = canvas.getContext('2d');
+            hwCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            hwCtx.lineWidth = 12;
+            hwCtx.lineCap = 'round';
+            hwCtx.lineJoin = 'round';
+            hwCtx.strokeStyle = '#000';
+
+            canvas.addEventListener('pointerdown', hwPointerDown);
+            canvas.addEventListener('pointermove', hwPointerMove);
+            canvas.addEventListener('pointerup', hwPointerUp);
+            canvas.addEventListener('pointerleave', hwPointerUp);
+        }
+
+        function hwPointerDown(e) {
+            if (isSubmitting || !hwModelReady) return;
+            e.preventDefault();
+            hwIsDrawing = true;
+            const pos = getHwPos(e);
+            hwLastPoint = pos;
+            hwCtx.beginPath();
+            hwCtx.moveTo(pos.x, pos.y);
+
+            document.getElementById('hwHint').style.opacity = '0';
+            hwHasStroke = true;
+
+            if (hwRecognizeTimer) {
+                clearTimeout(hwRecognizeTimer);
+                hwRecognizeTimer = null;
+            }
+        }
+
+        function hwPointerMove(e) {
+            if (!hwIsDrawing) return;
+            e.preventDefault();
+            const pos = getHwPos(e);
+            hwCtx.lineTo(pos.x, pos.y);
+            hwCtx.stroke();
+            hwCtx.beginPath();
+            hwCtx.moveTo(pos.x, pos.y);
+            hwLastPoint = pos;
+        }
+
+        function hwPointerUp(e) {
+            if (!hwIsDrawing) return;
+            hwIsDrawing = false;
+            hwCtx.beginPath();
+
+            if (hwHasStroke && hwRecognizeTimer) {
+                clearTimeout(hwRecognizeTimer);
+            }
+            hwRecognizeTimer = setTimeout(() => {
+                hwRecognizeAndAppend();
+            }, 900);
+        }
+
+        function getHwPos(e) {
+            const canvas = document.getElementById('hwCanvas');
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function hwClearCanvas() {
+            if (!hwCtx) return;
+            const canvas = document.getElementById('hwCanvas');
+            hwCtx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+            document.getElementById('hwHint').style.opacity = '1';
+            hwHasStroke = false;
+            if (hwRecognizeTimer) {
+                clearTimeout(hwRecognizeTimer);
+                hwRecognizeTimer = null;
+            }
+            currentAnswer = '';
+            updateAnswerDisplay();
+        }
+
+        function hwUndo() {
+            if (currentAnswer.length > 0) {
+                currentAnswer = currentAnswer.slice(0, -1);
+                updateAnswerDisplay();
+            }
+        }
+
+        // ===== 识别逻辑 =====
+
+        function isInkPixel(data, idx) {
+            return data[idx + 3] > 50 && (data[idx] + data[idx + 1] + data[idx + 2]) / 3 < 200;
+        }
+
+        function findDigitRegions(canvas) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const srcData = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+
+            const colInk = new Uint32Array(w);
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (isInkPixel(srcData, (y * w + x) * 4)) colInk[x]++;
+                }
+            }
+
+            const rawRuns = [];
+            let runStart = -1;
+            for (let x = 0; x <= w; x++) {
+                if (x < w && colInk[x] > 0) {
+                    if (runStart < 0) runStart = x;
+                } else if (runStart >= 0) {
+                    rawRuns.push([runStart, x]);
+                    runStart = -1;
+                }
+            }
+            if (rawRuns.length === 0) return [];
+
+            const minGap = w * 0.04;
+            const merged = [rawRuns[0].slice()];
+            for (let i = 1; i < rawRuns.length; i++) {
+                const prev = merged[merged.length - 1];
+                const curr = rawRuns[i];
+                if (curr[0] - prev[1] < minGap) {
+                    prev[1] = curr[1];
+                } else {
+                    merged.push(curr.slice());
+                }
+            }
+
+            return merged.map(([x1, x2]) => {
+                let y1 = h, y2 = 0;
+                for (let y = 0; y < h; y++) {
+                    for (let x = x1; x < x2; x++) {
+                        if (isInkPixel(srcData, (y * w + x) * 4)) {
+                            if (y < y1) y1 = y;
+                            if (y > y2) y2 = y;
+                        }
+                    }
+                }
+                return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 + 1 };
+            });
+        }
+
+        function recognizeSingleRegion(canvas, region) {
+            return tf.tidy(() => {
+                const pad = Math.max(region.w, region.h) * 0.2;
+                const rx = Math.max(0, region.x - pad);
+                const ry = Math.max(0, region.y - pad);
+                const rw = Math.min(canvas.width - rx, region.w + pad * 2);
+                const rh = Math.min(canvas.height - ry, region.h + pad * 2);
+
+                const side = Math.max(rw, rh);
+                const offX = (side - rw) / 2;
+                const offY = (side - rh) / 2;
+
+                const tmp = document.createElement('canvas');
+                tmp.width = 28;
+                tmp.height = 28;
+                const tCtx = tmp.getContext('2d');
+                tCtx.fillStyle = '#fff';
+                tCtx.fillRect(0, 0, 28, 28);
+
+                const scale = 20 / side;
+                tCtx.drawImage(canvas, rx, ry, rw, rh, 4 + offX * scale, 4 + offY * scale, rw * scale, rh * scale);
+
+                const imgData = tCtx.getImageData(0, 0, 28, 28);
+                const px = imgData.data;
+                for (let i = 0; i < px.length; i += 4) {
+                    const v = 255 - (px[i] + px[i + 1] + px[i + 2]) / 3;
+                    px[i] = px[i + 1] = px[i + 2] = v;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+
+                const tensor = tf.browser.fromPixels(tmp, 1)
+                    .toFloat().div(255.0).reshape([1, 28, 28, 1]);
+
+                const probs = hwModel.predict(tensor).dataSync();
+                const maxP = Math.max(...probs);
+                if (maxP < 0.3) return null;
+                return probs.indexOf(maxP);
+            });
+        }
+
+        function recognizeAllDigits(canvas) {
+            const regions = findDigitRegions(canvas);
+            if (regions.length === 0) return [];
+
+            const digits = [];
+            for (const r of regions) {
+                const d = recognizeSingleRegion(canvas, r);
+                if (d !== null) digits.push(d);
+            }
+            return digits;
+        }
+
+        async function hwRecognizeAndAppend() {
+            if (!hwModel || !hwHasStroke) return;
+
+            const canvas = document.getElementById('hwCanvas');
+            const digits = recognizeAllDigits(canvas);
+
+            if (digits.length > 0) {
+                const result = digits.join('');
+                currentAnswer += result;
+                updateAnswerDisplay();
+                autoCheckAnswer();
+            }
+
+            hwCtx.clearRect(0, 0, canvas.width / window.devicePixelRatio, canvas.height / window.devicePixelRatio);
+            hwHasStroke = false;
+            document.getElementById('hwHint').style.opacity = '1';
+        }
+
+        // ===== 切换输入模式 =====
+
+        function switchInputUI() {
+            const numpad = document.getElementById('numpad');
+            const hwPad = document.getElementById('handwritePad');
+
+            if (inputMode === 'handwrite') {
+                numpad.style.display = 'none';
+                hwPad.style.display = 'flex';
+                setTimeout(() => {
+                    initHwCanvas();
+                }, 50);
+            } else {
+                numpad.style.display = 'block';
+                hwPad.style.display = 'none';
+            }
+        }
     </script>
 </body>
 
