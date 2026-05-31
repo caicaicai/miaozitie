@@ -808,6 +808,240 @@
             transform: scale(0.92);
         }
 
+        /* ===== 横屏模式 ===== */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body { padding: 0; }
+            .container { border-radius: 0; max-width: 100%; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+            .header { padding: 8px 16px 6px; }
+            .header h1 { font-size: 1.2em; margin-bottom: 0; }
+            .header p { display: none; }
+            .header .nav-links { margin-top: 4px; gap: 4px; }
+            .header .nav-link { padding: 2px 8px; font-size: 10px; }
+            .setup-panel { padding: 10px 16px; flex: 1; overflow-y: auto; }
+            .setup-section { margin-bottom: 10px; }
+            .hint { margin-bottom: 10px; padding: 6px 10px; font-size: 12px; }
+            .footer { padding: 6px; font-size: 10px; }
+
+            .quiz-area {
+                flex: 1;
+                flex-direction: row !important;
+            }
+
+            .quiz-area > .quiz-top-bar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 5;
+                padding: 4px 10px;
+                background: rgba(248,249,250,0.95);
+            }
+
+            .quiz-area > .progress-bar-wrap {
+                position: absolute;
+                top: 38px;
+                left: 0;
+                right: 0;
+                z-index: 5;
+                height: 3px;
+            }
+
+            .quiz-area {
+                position: relative;
+            }
+
+            .quiz-body {
+                flex: 1;
+                padding-top: 46px;
+                justify-content: center;
+            }
+
+            .numpad {
+                width: 260px;
+                flex-shrink: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 4px 6px;
+                border-top: none;
+                border-left: 1px solid #e0e0e0;
+            }
+
+            .numpad-row { gap: 4px; margin-bottom: 4px; }
+            .numpad-key { height: 38px; font-size: 18px; border-radius: 8px; }
+            .numpad-key.key-submit { font-size: 15px; }
+            .numpad-key.key-skip { font-size: 13px; }
+            .numpad-key.key-clear { font-size: 13px; }
+
+            .question-display { font-size: 36px; margin-bottom: 4px; }
+            .answer-display { font-size: 32px; min-height: 42px; }
+            .answer-display .cursor-blink { height: 28px; }
+            .feedback { font-size: 18px; height: 24px; line-height: 24px; }
+
+            .quiz-stat-value { font-size: 14px; }
+            .quiz-stat-label { font-size: 9px; }
+            .quiz-action-btn { width: 28px; height: 28px; font-size: 14px; }
+
+            .result-area { padding: 16px; flex: 1; overflow-y: auto; }
+            .result-emoji { font-size: 48px; margin-bottom: 6px; }
+            .result-title { font-size: 20px; margin-bottom: 12px; }
+            .star-rating { font-size: 24px; margin-bottom: 12px; }
+            .result-card-value { font-size: 22px; }
+        }
+
+        /* 全屏 + 横屏 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .fullscreen-active .question-display { font-size: clamp(32px, 6vh, 56px); }
+            .fullscreen-active .answer-display { font-size: clamp(28px, 5vh, 48px); min-height: clamp(36px, 6vh, 60px); }
+            .fullscreen-active .answer-display .cursor-blink { height: clamp(24px, 4.5vh, 44px); }
+            .fullscreen-active .feedback { font-size: clamp(16px, 3vh, 28px); }
+        }
+
+        /* ===== 护眼模式 ===== */
+        body.eye-care {
+            background: #e8e0d0;
+        }
+
+        body.eye-care .container {
+            background: #f5f0e6;
+        }
+
+        body.eye-care .header {
+            background: linear-gradient(135deg, #a8c0a0 0%, #8fb08a 100%);
+        }
+
+        body.eye-care .setup-panel,
+        body.eye-care .quiz-top-bar {
+            background: #ede8dc;
+        }
+
+        body.eye-care .numpad {
+            background: #e8e2d4;
+        }
+
+        body.eye-care .numpad-key {
+            background: #f5f0e6;
+            color: #4a4a3a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+
+        body.eye-care .numpad-key:active {
+            background: #e0dace;
+        }
+
+        body.eye-care .numpad-key.key-submit {
+            background: linear-gradient(135deg, #a8c0a0 0%, #8fb08a 100%);
+            color: white;
+        }
+
+        body.eye-care .numpad-key.key-clear {
+            background: #f0ddd0;
+            color: #a07060;
+        }
+
+        body.eye-care .numpad-key.key-back {
+            background: #efe4c8;
+            color: #7a6a40;
+        }
+
+        body.eye-care .numpad-key.key-skip {
+            background: #e0dace;
+            color: #6a6a5a;
+        }
+
+        body.eye-care .numpad-key.key-negative {
+            background: #d8e8d8;
+            color: #4a7a4a;
+        }
+
+        body.eye-care .question-display {
+            color: #3a3a2a;
+        }
+
+        body.eye-care .question-display .op {
+            color: #8fb08a;
+        }
+
+        body.eye-care .answer-display {
+            color: #3a3a2a;
+            border-bottom-color: #8fb08a;
+        }
+
+        body.eye-care .answer-display .cursor-blink {
+            background: #8fb08a;
+        }
+
+        body.eye-care .answer-display.correct {
+            border-color: #6a9a60;
+            color: #6a9a60;
+        }
+
+        body.eye-care .answer-display.wrong {
+            border-color: #b07060;
+            color: #b07060;
+        }
+
+        body.eye-care .progress-bar {
+            background: linear-gradient(90deg, #a8c0a0, #8fb08a);
+        }
+
+        body.eye-care .timer-value {
+            color: #8fb08a;
+        }
+
+        body.eye-care .btn-start,
+        body.eye-care .btn-retry {
+            background: linear-gradient(135deg, #a8c0a0 0%, #8fb08a 100%);
+        }
+
+        body.eye-care .btn-fullscreen {
+            border-color: #d0c8b8;
+        }
+
+        body.eye-care .setup-item select,
+        body.eye-care .digits-config,
+        body.eye-care .digits-config select {
+            background: #f5f0e6;
+            border-color: #d0c8b8;
+            color: #4a4a3a;
+        }
+
+        body.eye-care .hint {
+            background: #f0ead0;
+            border-left-color: #c0b070;
+            color: #6a5a30;
+        }
+
+        body.eye-care .footer {
+            background: #ede8dc;
+            color: #8a8a7a;
+        }
+
+        body.eye-care .footer a {
+            color: #8fb08a;
+        }
+
+        body.eye-care .confirm-dialog {
+            background: #f5f0e6;
+        }
+
+        body.eye-care .confirm-ok {
+            background: linear-gradient(135deg, #a8c0a0 0%, #8fb08a 100%);
+        }
+
+        body.eye-care .result-card {
+            background: #ede8dc;
+        }
+
+        body.eye-care .wrong-item {
+            background: #f0e8e0;
+            border-left-color: #b07060;
+        }
+
+        body.eye-care.is-fullscreen {
+            background: #f5f0e6;
+        }
+
         @media print {
             body { background: white; padding: 0; }
             .container { box-shadow: none; border-radius: 0; }
@@ -931,7 +1165,10 @@
             </div>
 
             <button class="btn-start" onclick="startQuiz()">开始答题</button>
-            <button class="btn-fullscreen" onclick="toggleFullscreen()">⛶ 全屏模式</button>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn-fullscreen" onclick="toggleFullscreen()" style="flex:1; margin-top:0;">⛶ 全屏模式</button>
+                <button class="btn-fullscreen" onclick="toggleEyeCare()" id="btnEyeCareSetup" style="flex:1; margin-top:0;">🌿 护眼模式</button>
+            </div>
         </div>
 
         <!-- 答题区域 -->
@@ -954,6 +1191,7 @@
                     <span class="quiz-stat-value timer-value" id="timerDisplay">00:00</span>
                 </div>
                 <div class="quiz-actions">
+                    <button class="quiz-action-btn" onclick="toggleEyeCare()" id="btnEyeCareQuiz" title="护眼模式">🌿</button>
                     <button class="quiz-action-btn" id="btnToggleFs" onclick="toggleFullscreen()" title="全屏">⛶</button>
                     <button class="quiz-action-btn" onclick="confirmRestart()" title="重新开始">↻</button>
                     <button class="quiz-action-btn" onclick="confirmBack()" title="返回设置">✕</button>
@@ -1527,6 +1765,13 @@
             showConfirm('确定要退出吗？当前进度将丢失。', function () {
                 backToSetup();
             });
+        }
+
+        // ===== 护眼模式 =====
+        function toggleEyeCare() {
+            document.body.classList.toggle('eye-care');
+            const isOn = document.body.classList.contains('eye-care');
+            document.getElementById('btnEyeCareSetup').textContent = isOn ? '🌿 护眼已开' : '🌿 护眼模式';
         }
 
         // ===== 全屏 =====
