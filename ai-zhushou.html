@@ -283,7 +283,9 @@
 
             <div class="button-group">
                 <button class="btn btn-primary" id="loadBtn">📥 加载模型</button>
+                <button class="btn btn-secondary" id="clearCacheBtn">🗑️ 清理模型缓存</button>
             </div>
+            <div class="load-status" id="cacheStatus"></div>
 
             <div class="progress-wrap" id="progressWrap">
                 <div class="progress-track">
@@ -319,7 +321,7 @@
     </div>
 
     <script type="module">
-        import { loadAIModel, generateWithAI, detectGPUAdapter } from './ai-engine.js';
+        import { loadAIModel, generateWithAI, detectGPUAdapter, clearAIModelCache } from './ai-engine.js';
 
         const chatHistory = [
             { role: 'system', content: '你是一个专为小学生内容创作服务的助手，回答要简洁、健康、适合儿童阅读，使用中文回复。' }
@@ -383,6 +385,37 @@
             }
         }
 
+        async function handleClearCache() {
+            const confirmed = window.confirm(
+                '确定要清理已下载的模型缓存吗？\n\n清理后下次使用需要重新下载约 500MB 以上的模型数据。'
+            );
+            if (!confirmed) return;
+
+            const btn = document.getElementById('clearCacheBtn');
+            const statusEl = document.getElementById('cacheStatus');
+            btn.disabled = true;
+            statusEl.textContent = '正在清理缓存，请稍候...';
+
+            try {
+                const result = await clearAIModelCache();
+                const count = result && typeof result.filesDeleted === 'number' ? result.filesDeleted : 0;
+                statusEl.textContent = count > 0
+                    ? `✅ 已清理缓存（删除了 ${count} 个文件）。下次使用需要重新下载模型。`
+                    : '✅ 清理完成（没有找到需要删除的缓存文件，可能本来就没有缓存，或当前浏览器不支持相关 API）。';
+
+                // 回到"未加载"的初始状态，方便重新走一遍加载流程
+                document.getElementById('chatPanel').classList.remove('active');
+                document.getElementById('progressWrap').classList.remove('active');
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('loadBtn').disabled = false;
+            } catch (err) {
+                console.error('清理缓存失败:', err);
+                statusEl.textContent = '❌ 清理缓存失败：' + (err && err.message ? err.message : '未知错误');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
         function appendMessage(role, text, pending) {
             const log = document.getElementById('chatLog');
             const wrap = document.createElement('div');
@@ -438,6 +471,7 @@
         }
 
         document.getElementById('loadBtn').addEventListener('click', handleLoadClick);
+        document.getElementById('clearCacheBtn').addEventListener('click', handleClearCache);
         document.getElementById('chatSendBtn').addEventListener('click', handleSend);
         document.getElementById('chatClearBtn').addEventListener('click', clearChat);
         document.getElementById('chatInput').addEventListener('keydown', (e) => {

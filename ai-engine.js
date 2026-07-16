@@ -75,6 +75,58 @@ function markModelLoaded() {
     }
 }
 
+function clearLoadedFlag() {
+    try {
+        localStorage.removeItem(READY_FLAG_KEY);
+    } catch (e) {
+        // 忽略
+    }
+}
+
+// 清理浏览器里已下载的模型缓存文件（释放存储空间，或者用来强制重新下载）。
+// 优先用 Transformers.js 自带的 ModelRegistry.clear_pipeline_cache()（会自动
+// 识别这个模型/dtype 实际用到了哪些文件）；如果这个 CDN 版本没有导出
+// ModelRegistry，就退回到直接操作 Cache Storage，按 URL 里是否包含 MODEL_ID
+// 来筛选删除，尽量不影响这个站点可能存在的其它缓存内容。
+//
+// 清理完成后会：重置本模块里正在使用的 pipeline 引用（下次调用会重新走一遍
+// 加载流程），并清掉 localStorage 里的"已加载过"标记（其它页面的 AI 辅助
+// 生成入口会随之隐藏，直到重新加载模型）。
+export async function clearAIModelCache() {
+    let result = null;
+
+    try {
+        const mod = await import(TRANSFORMERS_CDN_URL);
+        if (mod.ModelRegistry && typeof mod.ModelRegistry.clear_pipeline_cache === 'function') {
+            result = await mod.ModelRegistry.clear_pipeline_cache('text-generation', MODEL_ID, { dtype: 'q4' });
+        }
+    } catch (e) {
+        console.warn('通过 ModelRegistry 清理缓存失败，尝试直接清理 Cache Storage：', e);
+    }
+
+    if (!result && typeof caches !== 'undefined') {
+        try {
+            const cache = await caches.open('transformers-cache');
+            const requests = await cache.keys();
+            let filesDeleted = 0;
+            for (const req of requests) {
+                if (req.url.includes(MODEL_ID)) {
+                    await cache.delete(req);
+                    filesDeleted++;
+                }
+            }
+            result = { filesDeleted };
+        } catch (e) {
+            console.warn('直接清理 Cache Storage 也失败了：', e);
+        }
+    }
+
+    generatorPromise = null;
+    clearLoadedFlag();
+
+    return result || { filesDeleted: 0 };
+}
+
 // 当前页面这次会话中，模型是否已经加载完成（区别于"之前是否加载过"）。
 export function isModelReadyInThisPage() {
     return generatorPromise !== null;
