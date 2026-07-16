@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>喵字帖 - 小学生练字与学习工具箱</title>
-    <meta name="description" content="喵字帖：专为小学生打造的免费在线工具箱，包含笔画练习、互动自测练字、抄字模式、文章注音、看拼音写汉字、古诗词打印卡、形近字辨析、生字听写、姓名贴生成、课程表生成、口算速练、运算表打印、时钟认读、人民币凑钱练习。">
+    <meta name="description" content="喵字帖：专为小学生打造的免费在线工具箱，包含笔画练习、互动自测练字、抄字模式、文章注音、看拼音写汉字、古诗词打印卡、形近字辨析、生字听写、姓名贴生成、课程表生成、口算速练、运算表打印、时钟认读、人民币凑钱练习，以及实验性的 AI 内容小助手。">
     <link rel="stylesheet" href="common.css">
     <style>
         * {
@@ -119,6 +119,19 @@
 
         .tool-card:hover .tool-enter {
             text-decoration: underline;
+        }
+
+        .badge-experimental {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #c0392b;
+            background: #fdecea;
+            border: 1px solid #f5b7ac;
+            border-radius: 12px;
+            padding: 2px 10px;
         }
 
         /* ===== 响应式 ===== */
@@ -247,6 +260,14 @@
                 <span class="tool-icon">💰</span>
                 <h2>人民币凑钱练习</h2>
                 <p>点击面额凑出目标金额，认识人民币、练习加法。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+
+            <a class="tool-card" href="ai-zhushou.html" style="--c1:#2c3e50;--c2:#4a5568;">
+                <span class="badge-experimental">实验性</span>
+                <span class="tool-icon">🧪</span>
+                <h2>AI 内容小助手</h2>
+                <p>本地加载 MiniCPM5-1B 大模型并对话调试；加载后，生字听写、看拼音写汉字等页面会自动出现 AI 辅助生成入口。</p>
                 <span class="tool-enter">开始使用 →</span>
             </a>
         </div>

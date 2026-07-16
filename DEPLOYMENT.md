@@ -102,6 +102,14 @@ git push
 
 本项目是纯前端静态页面，不需要配置环境变量。
 
+## 🧪 关于 AI 内容小助手（`ai-zhushou.html` / `ai-engine.js`）
+
+`ai-zhushou.html` 负责加载模型和提供对话调试窗口；实际的模型加载/生成逻辑封装在共享文件 `ai-engine.js` 里，`tingxie.html`、`moxie.html` 等页面也会 import 它来实现各自的"AI 辅助生成"入口。这几个页面在运行时会通过 `<script type="module">` 从 jsDelivr CDN 加载 Transformers.js，并从 Hugging Face Hub 下载一个约 500MB+ 的 MiniCPM5-1B 浏览器版大模型，完全在用户浏览器本地运行推理。
+
+- **不需要额外部署步骤**：模型文件和 `ai-engine.js` 都不需要特殊处理，`ai-engine.js` 只是一个几 KB 的普通静态文件，正常按上面的步骤部署即可
+- **不受 25MB 单文件限制影响**：真正的模型权重是运行时从 HF Hub 直接下载到用户浏览器，不经过本站服务器，也不在仓库里
+- **该功能依赖外部服务可用性**：如果 Hugging Face Hub 或该模型仓库不可访问，这几个页面的 AI 生成功能会加载失败（其余所有页面不受影响，仍可离线/正常使用）
+
 ## 🎯 访问你的网站
 
 部署成功后，你的网站地址将是：

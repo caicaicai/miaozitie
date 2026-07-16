@@ -169,6 +169,43 @@
             min-height: 18px;
         }
 
+        /* ===== AI 辅助生成（实验性） ===== */
+        .ai-assist-locked {
+            margin-top: 14px;
+            padding: 10px 14px;
+            border: 1px dashed #ccd4e0;
+            border-radius: 10px;
+            font-size: 12.5px;
+            color: #888;
+            background: #fafbfd;
+        }
+
+        .ai-assist-locked a {
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        .ai-assist-ready {
+            margin-top: 14px;
+            padding: 14px;
+            border: 1px solid #cfe8fb;
+            border-radius: 10px;
+            background: #f3faff;
+        }
+
+        .ai-assist-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2c7fb8;
+            margin-bottom: 10px;
+        }
+
+        .ai-gen-status {
+            font-size: 12.5px;
+            color: #888;
+            margin-left: 10px;
+        }
+
         /* ===== 听写练习区 ===== */
         .dictation-stage {
             padding: 40px 30px;
@@ -469,6 +506,7 @@
                 <div class="button-group">
                     <button class="btn btn-secondary" onclick="useCustomList()">✅ 使用自定义内容</button>
                 </div>
+                <div id="aiAssistBlock"></div>
             </div>
 
             <div class="source-summary" id="sourceSummary"></div>
@@ -810,6 +848,88 @@
 
             setTimeout(() => window.print(), 100);
         }
+    </script>
+
+    <script type="module">
+        import { hasModelBeenLoadedBefore, generateWithAI } from './ai-engine.js';
+
+        function renderAIAssistBlock() {
+            const container = document.getElementById('aiAssistBlock');
+            if (!container) return;
+
+            if (!hasModelBeenLoadedBefore()) {
+                container.innerHTML = `
+                    <div class="ai-assist-locked">
+                        🤖 AI 辅助生成词语（实验性）需要先加载本地大模型 ——
+                        <a href="ai-zhushou.html">前往 AI 内容小助手加载</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="ai-assist-ready">
+                    <div class="ai-assist-title">🤖 AI 辅助生成词语（实验性）</div>
+                    <div class="options-group">
+                        <div class="option-item">
+                            <label>年级：</label>
+                            <select id="aiGrade">
+                                <option value="一年级">一年级</option>
+                                <option value="二年级" selected>二年级</option>
+                                <option value="三年级">三年级</option>
+                                <option value="四年级">四年级</option>
+                                <option value="五年级">五年级</option>
+                                <option value="六年级">六年级</option>
+                            </select>
+                        </div>
+                        <div class="option-item">
+                            <label>数量：</label>
+                            <input type="number" id="aiCount" value="10" min="3" max="20">
+                        </div>
+                        <div class="option-item">
+                            <label>主题：</label>
+                            <input type="text" id="aiTopic" placeholder="如：秋天、动物（可留空）">
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" id="aiGenBtn">✨ AI 生成词语</button>
+                        <span class="ai-gen-status" id="aiGenStatus"></span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('aiGenBtn').addEventListener('click', handleAIGenerate);
+        }
+
+        async function handleAIGenerate() {
+            const btn = document.getElementById('aiGenBtn');
+            const status = document.getElementById('aiGenStatus');
+            const grade = document.getElementById('aiGrade').value;
+            const count = document.getElementById('aiCount').value;
+            const topic = document.getElementById('aiTopic').value.trim() || '日常生活';
+
+            btn.disabled = true;
+            status.textContent = '⏳ 正在生成，请稍候（首次调用可能需要几十秒）...';
+
+            try {
+                const text = await generateWithAI([
+                    { role: 'system', content: '你是一名小学语文老师，只输出词语列表，每行一个词语，不要输出编号、拼音或任何解释。' },
+                    { role: 'user', content: `请给出 ${count} 个适合${grade}学生听写练习的常用词语，主题围绕"${topic}"，要是小学阶段常见词语，每行一个。` }
+                ]);
+                document.getElementById('customInput').value = text || '（没有生成有效内容，请重试）';
+                status.textContent = '✅ 已生成到上方文本框，请检查后点击"使用自定义内容"';
+            } catch (err) {
+                console.error('AI 生成失败:', err);
+                status.textContent = '❌ 生成失败：' + (err && err.message ? err.message : '未知错误');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 如果用户在另一个标签页刚加载完模型，这个标签页也能实时感知到并显示功能入口
+        window.addEventListener('storage', renderAIAssistBlock);
+
+        renderAIAssistBlock();
     </script>
 </body>
 

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 内容小助手（实验性） - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #4a5568 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a5568 100%) !important;
+        }
+
+        .experimental-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: 12px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .warning-box {
+            background: #fff3f0;
+            border: 1px solid #ffb3a0;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            font-size: 13.5px;
+            color: #8a3324;
+            line-height: 1.8;
+        }
+
+        .warning-box strong {
+            color: #c0392b;
+        }
+
+        .warning-box ul {
+            margin: 6px 0 0 18px;
+        }
+
+        .warning-box a {
+            color: #c0392b;
+            text-decoration: underline;
+        }
+
+        .device-status {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 14px;
+            padding: 8px 12px;
+            background: #eef1f5;
+            border-radius: 8px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a5568 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #444;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .progress-wrap {
+            margin-top: 14px;
+            display: none;
+        }
+
+        .progress-wrap.active {
+            display: block;
+        }
+
+        .progress-track {
+            background: #e9ecef;
+            border-radius: 20px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(135deg, #2c3e50 0%, #4a5568 100%);
+            transition: width 0.3s;
+        }
+
+        .load-status {
+            font-size: 13px;
+            color: #555;
+            margin-top: 8px;
+        }
+
+        /* ===== 对话调试窗口 ===== */
+        .chat-panel {
+            display: none;
+            padding: 0 30px 30px;
+        }
+
+        .chat-panel.active {
+            display: block;
+        }
+
+        .chat-hint {
+            font-size: 12.5px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .chat-log {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background: #fafbfc;
+            padding: 16px;
+            height: 340px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .chat-msg {
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .chat-msg .role-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #999;
+        }
+
+        .chat-msg.user .role-label {
+            color: #4a5568;
+        }
+
+        .chat-msg.assistant .role-label {
+            color: #2c8a5e;
+        }
+
+        .chat-msg .bubble {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-width: 100%;
+        }
+
+        .chat-msg.user .bubble {
+            background: #eef1f5;
+            color: #333;
+        }
+
+        .chat-msg.assistant .bubble {
+            background: #e8f5ee;
+            color: #1e5a3a;
+        }
+
+        .chat-msg.assistant .bubble.pending {
+            color: #888;
+            font-style: italic;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-row textarea {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 46px;
+        }
+
+        .chat-input-row textarea:focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+
+            .chat-panel {
+                padding: 0 18px 18px;
+            }
+
+            .chat-log {
+                height: 280px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🧪 AI 内容小助手<span class="experimental-badge">实验性功能</span></h1>
+            <p>加载本地大模型，用简单的对话窗口测试效果</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="warning-box">
+                <strong>⚠️ 使用前请注意：</strong>
+                <ul>
+                    <li>这是实验性功能，依赖社区提供的浏览器版模型文件，可能不稳定或加载失败</li>
+                    <li>首次使用需要下载约 <strong>500MB 以上</strong>的模型数据，仅下载一次，浏览器会自动缓存；请在网络良好时使用</li>
+                    <li>如果设备不支持 WebGPU，会自动退回 CPU(WASM) 模式运行，生成速度会明显变慢，请耐心等待</li>
+                    <li>这里只是一个用于测试模型效果的<strong>对话调试窗口</strong>；具体的"AI 辅助生成"功能（如听写词语生成）已经分别做进了对应的功能页面里，加载过一次模型后，那些页面会自动出现对应入口</li>
+                    <li>模型权重遵循 OpenBMB「通用模型许可协议」：学术研究免费，如需商业用途需邮件登记，详见
+                        <a href="https://github.com/OpenBMB/General-Model-License" target="_blank" rel="noopener noreferrer">协议原文</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="device-status" id="deviceStatus">正在检测设备加速能力...</div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="loadBtn">📥 加载模型</button>
+            </div>
+
+            <div class="progress-wrap" id="progressWrap">
+                <div class="progress-track">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="load-status" id="loadStatus"></div>
+            </div>
+        </div>
+
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-hint">💬 对话调试窗口：随便聊聊，测试一下模型的回复效果（回复内容不保证准确，仅供调试参考）。</div>
+            <div class="chat-log" id="chatLog"></div>
+            <div class="chat-input-row">
+                <textarea id="chatInput" placeholder="输入内容，按 Enter 发送（Shift+Enter 换行）"></textarea>
+                <button class="btn btn-primary" id="chatSendBtn">发送</button>
+            </div>
+            <div class="button-group" style="margin-top: 10px;">
+                <button class="btn btn-secondary" id="chatClearBtn">🗑️ 清空对话</button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                基于 <a href="https://github.com/huggingface/transformers.js" target="_blank"
+                    rel="noopener noreferrer">Transformers.js</a> 与
+                <a href="https://github.com/OpenBMB/MiniCPM" target="_blank" rel="noopener noreferrer">MiniCPM5-1B</a>
+                &nbsp;|&nbsp;
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; 实验性功能，生成内容请人工审核
+            </p>
+        </footer>
+    </div>
+
+    <script type="module">
+        import { loadAIModel, generateWithAI, supportsWebGPU } from './ai-engine.js';
+
+        const chatHistory = [
+            { role: 'system', content: '你是一个专为小学生内容创作服务的助手，回答要简洁、健康、适合儿童阅读，使用中文回复。' }
+        ];
+
+        function initDeviceStatus() {
+            const el = document.getElementById('deviceStatus');
+            if (supportsWebGPU()) {
+                el.textContent = '✅ 检测到 WebGPU 加速支持，将使用较快的 GPU 模式运行。';
+            } else {
+                el.textContent = '⚠️ 未检测到 WebGPU 支持，将使用 CPU(WASM) 模式运行，生成速度会比较慢。建议使用最新版 Chrome / Edge 浏览器。';
+            }
+        }
+
+        async function handleLoadClick() {
+            const loadBtn = document.getElementById('loadBtn');
+            const progressWrap = document.getElementById('progressWrap');
+            const progressBar = document.getElementById('progressBar');
+            const loadStatus = document.getElementById('loadStatus');
+
+            loadBtn.disabled = true;
+            progressWrap.classList.add('active');
+            loadStatus.textContent = '正在准备加载模型，请稍候...';
+
+            try {
+                await loadAIModel((data) => {
+                    if (data.status === 'progress' && data.total) {
+                        const pct = Math.min(100, Math.round((data.loaded / data.total) * 100));
+                        progressBar.style.width = pct + '%';
+                        loadStatus.textContent = `正在下载模型文件${data.file ? '：' + data.file : ''}（${pct}%）`;
+                    } else if (data.status === 'ready' || data.status === 'done') {
+                        progressBar.style.width = '100%';
+                        loadStatus.textContent = '✅ 模型加载完成！';
+                    }
+                });
+
+                loadStatus.textContent = '✅ 模型加载完成，可以开始对话啦！';
+                document.getElementById('chatPanel').classList.add('active');
+                document.getElementById('chatInput').focus();
+            } catch (err) {
+                console.error('模型加载失败:', err);
+                loadStatus.textContent = '❌ 模型加载失败：' + (err && err.message ? err.message : '未知错误') +
+                    '。可能是网络问题，或该模型文件暂时不可用，请稍后重试。';
+                loadBtn.disabled = false;
+            }
+        }
+
+        function appendMessage(role, text, pending) {
+            const log = document.getElementById('chatLog');
+            const wrap = document.createElement('div');
+            wrap.className = 'chat-msg ' + role;
+
+            const label = document.createElement('div');
+            label.className = 'role-label';
+            label.textContent = role === 'user' ? '我' : 'AI';
+            wrap.appendChild(label);
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble' + (pending ? ' pending' : '');
+            bubble.textContent = text;
+            wrap.appendChild(bubble);
+
+            log.appendChild(wrap);
+            log.scrollTop = log.scrollHeight;
+            return bubble;
+        }
+
+        async function handleSend() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const sendBtn = document.getElementById('chatSendBtn');
+            sendBtn.disabled = true;
+            input.value = '';
+
+            appendMessage('user', text);
+            chatHistory.push({ role: 'user', content: text });
+
+            const pendingBubble = appendMessage('assistant', '⏳ 正在思考...', true);
+
+            try {
+                const reply = await generateWithAI(chatHistory);
+                pendingBubble.textContent = reply || '（没有生成有效内容，请重新试试）';
+                pendingBubble.classList.remove('pending');
+                chatHistory.push({ role: 'assistant', content: reply });
+            } catch (err) {
+                console.error('生成失败:', err);
+                pendingBubble.textContent = '❌ 生成失败：' + (err && err.message ? err.message : '未知错误');
+                pendingBubble.classList.remove('pending');
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function clearChat() {
+            chatHistory.length = 1; // 保留 system 消息
+            document.getElementById('chatLog').innerHTML = '';
+        }
+
+        document.getElementById('loadBtn').addEventListener('click', handleLoadClick);
+        document.getElementById('chatSendBtn').addEventListener('click', handleSend);
+        document.getElementById('chatClearBtn').addEventListener('click', clearChat);
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        initDeviceStatus();
+    </script>
+</body>
+
+</html>
