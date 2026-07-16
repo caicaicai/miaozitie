@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生字听写 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <script src="pinyin-pro.min.js"></script>
+    <script src="ziku-data.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .source-tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 2px solid #dfe3ea;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-tab.active {
+            border-color: #4facfe;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .source-panel {
+            display: none;
+        }
+
+        .source-panel.active {
+            display: block;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select,
+        .option-item input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .option-item input[type="number"] {
+            width: 70px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #444;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .source-summary {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #4facfe;
+            font-weight: 600;
+            min-height: 18px;
+        }
+
+        /* ===== 听写练习区 ===== */
+        .dictation-stage {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .stage-empty {
+            color: #999;
+            padding: 30px 0;
+        }
+
+        .stage-empty::before {
+            content: "🔊";
+            display: block;
+            font-size: 3.5em;
+            margin-bottom: 10px;
+        }
+
+        .stage-progress {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stage-status {
+            font-size: 1.05em;
+            color: #666;
+            min-height: 28px;
+            margin-bottom: 22px;
+        }
+
+        .stage-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stage-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: #eef1f5;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stage-btn:hover {
+            background: #dfe4ea;
+        }
+
+        .stage-btn.primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .stage-btn.danger {
+            background: #ffe3e3;
+            color: #d63333;
+        }
+
+        .finish-actions {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .finish-actions.active {
+            display: block;
+        }
+
+        /* ===== 答案核对 ===== */
+        .answer-review {
+            display: none;
+            padding: 0 30px 30px;
+        }
+
+        .answer-review.active {
+            display: block;
+        }
+
+        .answer-review h3 {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .answer-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .answer-chip {
+            background: #f0f4ff;
+            border-radius: 10px;
+            padding: 10px 16px;
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+            min-width: 50px;
+        }
+
+        .answer-chip .py {
+            display: block;
+            font-size: 11px;
+            color: #4facfe;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        /* ===== 打印答题纸 ===== */
+        .print-preview {
+            display: none;
+            padding: 0 30px 30px;
+        }
+
+        .print-preview.active {
+            display: block;
+        }
+
+        .a4-sheet {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 24px;
+            background: white;
+        }
+
+        .sheet-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .sheet-meta {
+            font-size: 13px;
+            font-weight: normal;
+            color: #666;
+        }
+
+        .sheet-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+        }
+
+        .sheet-cell {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .cell-index {
+            font-size: 13px;
+            color: #999;
+            min-width: 18px;
+        }
+
+        /* 田字格样式（与笔画练习模式一致） */
+        .grid-container {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border: 1px solid #4CAF50;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .grid-container .grid-line-h,
+        .grid-container .grid-line-v {
+            position: absolute;
+            background: none;
+        }
+
+        .grid-container .grid-line-h {
+            width: 100%;
+            height: 0;
+            top: 50%;
+            left: 0;
+            border-top: 1px dashed #4CAF50;
+        }
+
+        .grid-container .grid-line-v {
+            width: 0;
+            height: 100%;
+            top: 0;
+            left: 50%;
+            border-left: 1px dashed #4CAF50;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .control-panel,
+            .dictation-stage,
+            .answer-review {
+                display: none;
+            }
+
+            .print-preview {
+                display: block;
+                padding: 0;
+            }
+
+            .a4-sheet {
+                border: none;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+
+            .stage-progress {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="brand-badge">🐱 喵字帖</a>
+            <h1>🔊 生字听写</h1>
+            <p>认真听、用心写，检验生字掌握情况</p>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">📝 笔画练习</a>
+                <a href="chaozi.html" class="nav-link">✍️ 抄字模式</a>
+                <a href="pinyin.html" class="nav-link">📖 文章注音</a>
+                <span class="nav-link active" aria-current="page">🔊 生字听写</span>
+                <a href="mingtie.html" class="nav-link">🏷️ 姓名贴</a>
+                <a href="kousuan.html" class="nav-link">🧮 口算速练</a>
+            </nav>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>选择听写内容和朗读设置后，点击"开始听写"，电脑会朗读生字/词语，孩子在纸上书写，读完后可查看答案核对，也可以打印一张听写答题纸。建议使用 Chrome / Edge 浏览器以获得最佳语音效果。
+            </div>
+
+            <div class="source-tabs">
+                <button class="source-tab active" id="tabGrade" onclick="switchSourceTab('grade')">📚 按年级抽取</button>
+                <button class="source-tab" id="tabCustom" onclick="switchSourceTab('custom')">✏️ 自定义内容</button>
+            </div>
+
+            <div class="source-panel active" id="panelGrade">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>选择年级：</label>
+                        <select id="gradeSelect">
+                            <option value="all">全部年级</option>
+                            <option value="1-1" selected>一年级上册</option>
+                            <option value="1-2">一年级下册</option>
+                            <option value="2-1">二年级上册</option>
+                            <option value="2-2">二年级下册</option>
+                            <option value="3-1">三年级上册</option>
+                            <option value="3-2">三年级下册</option>
+                            <option value="4-1">四年级上册</option>
+                            <option value="4-2">四年级下册</option>
+                            <option value="5-1">五年级上册</option>
+                            <option value="5-2">五年级下册</option>
+                            <option value="6-1">六年级上册</option>
+                            <option value="6-2">六年级下册</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>随机数量：</label>
+                        <input type="number" id="randomCount" value="10" min="1" max="50">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="pickFromGrade()">🎲 随机抽取</button>
+                </div>
+            </div>
+
+            <div class="source-panel" id="panelCustom">
+                <textarea id="customInput" placeholder="输入要听写的字或词语，用空格、逗号或换行分隔，例如：&#10;太阳 月亮 星星"></textarea>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="useCustomList()">✅ 使用自定义内容</button>
+                </div>
+            </div>
+
+            <div class="source-summary" id="sourceSummary"></div>
+
+            <hr style="border: none; border-top: 1px solid #e9ecef; margin: 16px 0;">
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>朗读语速：</label>
+                    <select id="rateSelect">
+                        <option value="0.7">慢速</option>
+                        <option value="1" selected>正常</option>
+                        <option value="1.3">较快</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <label>朗读遍数：</label>
+                    <select id="repeatSelect">
+                        <option value="1">1 遍</option>
+                        <option value="2" selected>2 遍</option>
+                        <option value="3">3 遍</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <label>播放方式：</label>
+                    <select id="modeSelect" onchange="toggleIntervalVisibility()">
+                        <option value="auto" selected>自动连续</option>
+                        <option value="manual">手动切换</option>
+                    </select>
+                </div>
+                <div class="option-item" id="intervalWrap">
+                    <label>间隔秒数：</label>
+                    <input type="number" id="intervalSeconds" value="6" min="3" max="20">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="startBtn" onclick="beginDictation()" disabled>▶️ 开始听写</button>
+            </div>
+        </div>
+
+        <div class="dictation-stage" id="dictationStage">
+            <div class="stage-empty" id="stageEmpty">
+                请先在上方选择听写内容，再点击"开始听写"
+            </div>
+            <div id="stageActive" style="display: none;">
+                <div class="stage-progress" id="stageProgress">第 1 / 10 个</div>
+                <div class="stage-status" id="stageStatus">准备中...</div>
+                <div class="stage-controls">
+                    <button class="stage-btn" onclick="prevItem()">⏮ 上一个</button>
+                    <button class="stage-btn primary" onclick="repeatItem()">🔁 重听</button>
+                    <button class="stage-btn" onclick="nextItem()">⏭ 下一个</button>
+                    <button class="stage-btn danger" onclick="stopDictation()">⏹ 结束听写</button>
+                </div>
+                <div class="finish-actions" id="finishActions">
+                    <p style="margin-bottom: 12px; color: #2e7d32; font-weight: bold;">🎉 听写完成！</p>
+                    <div class="button-group" style="justify-content: center;">
+                        <button class="btn btn-secondary" onclick="showAnswers()">📋 查看答案核对</button>
+                        <button class="btn btn-secondary" onclick="renderPrintSheet()">🖨️ 生成打印答题纸</button>
+                        <button class="btn btn-primary" onclick="stopDictation()">🔄 重新设置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="answer-review" id="answerReview">
+            <h3>📋 本次听写内容（核对用）：</h3>
+            <div class="answer-list" id="answerList"></div>
+        </div>
+
+        <div class="print-preview" id="printPreview"></div>
+
+        <footer class="footer">
+            <p>
+                基于 <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">Pinyin
+                    Pro</a> 和浏览器语音朗读
+                &nbsp;|&nbsp;
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的生字听写工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let dictationList = [];
+        let currentIndex = -1;
+        let autoTimer = null;
+        let zhVoice = null;
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = speechSynthesis.getVoices();
+            zhVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('zh')) || null;
+        }
+
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function switchSourceTab(tab) {
+            const isGrade = tab === 'grade';
+            document.getElementById('tabGrade').classList.toggle('active', isGrade);
+            document.getElementById('tabCustom').classList.toggle('active', !isGrade);
+            document.getElementById('panelGrade').classList.toggle('active', isGrade);
+            document.getElementById('panelCustom').classList.toggle('active', !isGrade);
+        }
+
+        function toggleIntervalVisibility() {
+            const isAuto = document.getElementById('modeSelect').value === 'auto';
+            document.getElementById('intervalWrap').style.display = isAuto ? 'flex' : 'none';
+        }
+
+        function pickFromGrade() {
+            const grade = document.getElementById('gradeSelect').value;
+            const count = parseInt(document.getElementById('randomCount').value) || 10;
+            const pool = grade === 'all' ? allChars : (gradeChars[grade] || allChars);
+
+            if (!pool.length) {
+                alert('所选年级字库为空！');
+                return;
+            }
+
+            const actual = Math.min(count, pool.length);
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            dictationList = shuffled.slice(0, actual);
+            onListReady();
+        }
+
+        function useCustomList() {
+            const raw = document.getElementById('customInput').value.trim();
+            if (!raw) {
+                alert('请输入要听写的内容！');
+                return;
+            }
+
+            const list = raw.split(/[\s,，、\n]+/).map(s => s.trim()).filter(Boolean);
+            if (!list.length) {
+                alert('未识别到有效的听写内容！');
+                return;
+            }
+
+            dictationList = list;
+            onListReady();
+        }
+
+        function onListReady() {
+            document.getElementById('sourceSummary').textContent =
+                `✅ 已准备 ${dictationList.length} 个听写内容，点击下方"开始听写"`;
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        function speakText(text, timesLeft, onAllDone) {
+            if (!('speechSynthesis' in window)) {
+                alert('抱歉，当前浏览器不支持语音朗读功能，请更换 Chrome / Edge 浏览器后重试。');
+                return;
+            }
+
+            speechSynthesis.cancel();
+            const rate = parseFloat(document.getElementById('rateSelect').value) || 1;
+            let remaining = timesLeft;
+
+            function speakOnce() {
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'zh-CN';
+                if (zhVoice) utter.voice = zhVoice;
+                utter.rate = rate;
+                utter.onend = () => {
+                    remaining--;
+                    if (remaining > 0) {
+                        speakOnce();
+                    } else if (onAllDone) {
+                        onAllDone();
+                    }
+                };
+                speechSynthesis.speak(utter);
+            }
+
+            speakOnce();
+        }
+
+        function clearAutoTimer() {
+            if (autoTimer) {
+                clearTimeout(autoTimer);
+                autoTimer = null;
+            }
+            if ('speechSynthesis' in window) speechSynthesis.cancel();
+        }
+
+        function setStatus(text) {
+            document.getElementById('stageStatus').textContent = text;
+        }
+
+        function updateProgressUI() {
+            document.getElementById('stageProgress').textContent =
+                `第 ${currentIndex + 1} / ${dictationList.length} 个`;
+        }
+
+        function beginDictation() {
+            if (!dictationList.length) {
+                alert('请先选择听写内容！');
+                return;
+            }
+
+            currentIndex = 0;
+            document.getElementById('stageEmpty').style.display = 'none';
+            document.getElementById('stageActive').style.display = 'block';
+            document.getElementById('finishActions').classList.remove('active');
+            document.getElementById('answerReview').classList.remove('active');
+            document.getElementById('printPreview').classList.remove('active');
+            playCurrent();
+        }
+
+        function playCurrent() {
+            clearAutoTimer();
+            updateProgressUI();
+            const repeatTimes = parseInt(document.getElementById('repeatSelect').value) || 2;
+            const autoMode = document.getElementById('modeSelect').value === 'auto';
+            const intervalSec = parseInt(document.getElementById('intervalSeconds').value) || 6;
+
+            setStatus('🔊 正在朗读，请认真听...');
+
+            speakText(dictationList[currentIndex], repeatTimes, () => {
+                const isLast = currentIndex === dictationList.length - 1;
+
+                if (isLast) {
+                    setStatus('✍️ 请写下你听到的最后一个内容');
+                    if (autoMode) {
+                        autoTimer = setTimeout(finishDictation, intervalSec * 1000);
+                    }
+                    return;
+                }
+
+                if (autoMode) {
+                    setStatus(`✍️ 请写下你听到的内容（${intervalSec} 秒后自动播放下一个）`);
+                    autoTimer = setTimeout(nextItem, intervalSec * 1000);
+                } else {
+                    setStatus('✍️ 请写下你听到的内容，写完后点击"下一个"');
+                }
+            });
+        }
+
+        function nextItem() {
+            clearAutoTimer();
+            if (currentIndex >= dictationList.length - 1) {
+                finishDictation();
+                return;
+            }
+            currentIndex++;
+            playCurrent();
+        }
+
+        function prevItem() {
+            clearAutoTimer();
+            if (currentIndex <= 0) return;
+            currentIndex--;
+            playCurrent();
+        }
+
+        function repeatItem() {
+            playCurrent();
+        }
+
+        function finishDictation() {
+            clearAutoTimer();
+            setStatus('🎉 听写完成！');
+            document.getElementById('finishActions').classList.add('active');
+        }
+
+        function stopDictation() {
+            clearAutoTimer();
+            currentIndex = -1;
+            document.getElementById('stageEmpty').style.display = 'block';
+            document.getElementById('stageActive').style.display = 'none';
+            document.getElementById('finishActions').classList.remove('active');
+        }
+
+        function getPinyinSafe(text) {
+            try {
+                if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) {
+                    return pinyinPro.pinyin(text, { toneType: 'symbol' });
+                }
+            } catch (e) {
+                console.log('拼音库未加载');
+            }
+            return '';
+        }
+
+        function showAnswers() {
+            const list = document.getElementById('answerList');
+            list.innerHTML = dictationList.map(item => {
+                const py = getPinyinSafe(item);
+                return `<div class="answer-chip">${py ? `<span class="py">${py}</span>` : ''}${item}</div>`;
+            }).join('');
+            document.getElementById('answerReview').classList.add('active');
+        }
+
+        function renderPrintSheet() {
+            const area = document.getElementById('printPreview');
+            area.innerHTML = '';
+
+            const page = document.createElement('div');
+            page.className = 'a4-sheet';
+
+            const title = document.createElement('div');
+            title.className = 'sheet-title';
+            title.innerHTML = `
+                <span>🔊 生字听写答题纸</span>
+                <span class="sheet-meta">姓名：__________　日期：__________　得分：__________</span>
+            `;
+            page.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'sheet-grid';
+
+            dictationList.forEach((item, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'sheet-cell';
+
+                const label = document.createElement('span');
+                label.className = 'cell-index';
+                label.textContent = (index + 1) + '.';
+                cell.appendChild(label);
+
+                Array.from(item).forEach(ch => {
+                    const box = document.createElement('div');
+                    box.className = 'grid-container';
+                    box.innerHTML = '<div class="grid-line-h"></div><div class="grid-line-v"></div>';
+                    cell.appendChild(box);
+                });
+
+                grid.appendChild(cell);
+            });
+
+            page.appendChild(grid);
+            area.appendChild(page);
+            area.classList.add('active');
+
+            setTimeout(() => window.print(), 100);
+        }
+    </script>
+</body>
+
+</html>
