@@ -1,23 +1,29 @@
 ﻿# Repository Guidelines
 
 ## Project Structure & Module Organization
-This repo is a static, browser-only Chinese writing practice site. Core pages live in the root:
-- `index.html`: stroke practice (main experience).
+This repo is a static, browser-only Chinese writing/learning practice site for elementary students. `index.html` is a dedicated navigation homepage (card grid linking to every tool); it has no practice UI of its own. Each tool lives in its own page in the root:
+- `bihua.html`: stroke-by-stroke practice (originally `index.html`; renamed when the homepage became a nav page).
 - `chaozi.html`: compact copy mode for articles.
 - `pinyin.html`: article pinyin annotation.
-Shared assets are also in the root: `hanzi-writer.min.js`, `pinyin-pro.min.js`, and `ziku.txt` (character data). Deployment notes are in `DEPLOYMENT.md`.
+- `tingxie.html`: spoken dictation practice (speech synthesis + printable answer sheet).
+- `mingtie.html`: name sticker/label generator.
+- `kousuan.html`: mental-math drills (numpad / handwriting recognition via `tf.min.js` + MNIST model in `mnist-model/` / voice input).
+
+Shared files, used across multiple pages (a deliberate exception to "inline everything", see below):
+- `common.css`: shared header/back-link/footer styles for every tool page (not used by `index.html`, which has its own standalone hero + card styles).
+- `ziku-data.js`: shared `gradeChars`/`allChars` character-bank data, used by `bihua.html` and `tingxie.html`.
+- `hanzi-writer.min.js`, `pinyin-pro.min.js`, `tf.min.js`, `ziku.txt` (character data reference).
+
+Every tool page's header only shows a single "← 返回首页" link back to `index.html`; there is no longer a multi-page nav bar. Deployment notes are in `DEPLOYMENT.md`.
 
 ## Build, Test, and Development Commands
-There is no build step or package manager. Open the HTML files directly in a browser.
-- `index.html` (main page)
-- `chaozi.html` (copy mode)
-- `pinyin.html` (pinyin mode)
+There is no build step or package manager. Open the HTML files directly in a browser, starting from `index.html`.
 For local testing with relative assets, a simple static server is fine:
 - `python -m http.server 8000` (then visit `http://localhost:8000/`)
 
 ## Coding Style & Naming Conventions
 - Indentation: 4 spaces in HTML, CSS, and JS blocks (match existing files).
-- Keep styles and scripts inline within each HTML page unless there is a clear reuse case.
+- Keep styles and scripts inline within each HTML page unless there is a clear reuse case (e.g. `common.css`, `ziku-data.js` — shared across multiple pages, extracted to avoid drift/duplication).
 - File naming: lowercase, short, descriptive (e.g., `pinyin.html`).
 - Avoid reformatting minified vendor files (`*.min.js`) unless intentionally updating them.
 

@@ -811,10 +811,8 @@
             body { padding: 0; }
             .container { border-radius: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
             .header { border-radius: 0; padding: 16px 16px 12px; }
-            .header .brand-badge { display: none; }
+            .header .back-link { display: none; }
             .header h1 { font-size: 1.5em; }
-            .header .nav-links { gap: 6px; }
-            .header .nav-link { padding: 4px 10px; font-size: 11px; }
             .setup-panel { padding: 16px; flex: 1; }
             .quiz-area { flex: 1; }
             .quiz-body { padding: 12px 16px 8px; }
@@ -1041,11 +1039,9 @@
             body { padding: 0; }
             .container { border-radius: 0; max-width: 100%; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
             .header { padding: 8px 16px 6px; }
-            .header .brand-badge { display: none; }
+            .header .back-link { display: none; }
             .header h1 { font-size: 1.2em; margin-bottom: 0; }
             .header p { display: none; }
-            .header .nav-links { margin-top: 4px; gap: 4px; }
-            .header .nav-link { padding: 2px 8px; font-size: 10px; }
             .setup-panel { padding: 10px 16px; flex: 1; overflow-y: auto; }
             .setup-section { margin-bottom: 10px; }
             .hint { margin-bottom: 10px; padding: 6px 10px; font-size: 12px; }
@@ -1326,17 +1322,9 @@
 <body>
     <div class="container">
         <header class="header">
-            <a href="index.html" class="brand-badge">🐱 喵字帖</a>
+            <a href="index.html" class="back-link">← 返回首页</a>
             <h1>🧮 口算速练</h1>
             <p>快速口算训练，越算越聪明！</p>
-            <nav class="nav-links">
-                <a href="index.html" class="nav-link">📝 笔画练习</a>
-                <a href="chaozi.html" class="nav-link">✍️ 抄字模式</a>
-                <a href="pinyin.html" class="nav-link">📖 文章注音</a>
-                <a href="tingxie.html" class="nav-link">🔊 生字听写</a>
-                <a href="mingtie.html" class="nav-link">🏷️ 姓名贴</a>
-                <span class="nav-link active" aria-current="page">🧮 口算速练</span>
-            </nav>
         </header>
 
         <!-- 设置区域 -->

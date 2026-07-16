@@ -4,13 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>笔画练习 - 喵字帖</title>
+    <title>喵字帖 - 小学生练字与学习工具箱</title>
+    <meta name="description" content="喵字帖：专为小学生打造的免费在线工具箱，包含笔画练习、抄字模式、文章注音、生字听写、姓名贴生成、口算速练。">
     <link rel="stylesheet" href="common.css">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script> -->
-    <script src="hanzi-writer.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.19.6/dist/index.js"></script> -->
-    <script src="pinyin-pro.min.js"></script>
-    <script src="ziku-data.js"></script>
     <style>
         * {
             margin: 0;
@@ -19,965 +15,196 @@
         }
 
         body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: #f4f6fb;
+            color: #2c2c34;
         }
 
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
+        /* ===== 顶部品牌横幅 ===== */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 64px 20px 96px;
+        }
+
+        .hero-logo {
+            font-size: 3.2em;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .hero h1 {
+            font-size: 2.6em;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .hero-tagline {
+            font-size: 1.05em;
+            opacity: 0.92;
+        }
+
+        /* ===== 工具卡片网格 ===== */
+        .tools-wrap {
+            max-width: 1100px;
+            margin: -56px auto 0;
+            padding: 0 24px 60px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .tool-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 18px;
+            padding: 28px 26px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 10px 30px rgba(30, 30, 60, 0.08);
+            transition: transform 0.25s, box-shadow 0.25s;
+            position: relative;
             overflow: hidden;
         }
 
-        .control-panel {
-            padding: 30px;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
+        .tool-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--c1), var(--c2));
         }
 
-        .input-group {
-            margin-bottom: 20px;
+        .tool-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(30, 30, 60, 0.16);
         }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-            font-size: 1.1em;
-        }
-
-        .input-group textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 16px;
-            font-family: inherit;
-            resize: vertical;
-            transition: border-color 0.3s;
-        }
-
-        .input-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 15px 30px;
-            font-size: 16px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        .btn-print {
-            background: #fd7e14;
-            color: white;
-        }
-
-        .btn-print:hover {
-            background: #e8590c;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(253, 126, 20, 0.4);
-        }
-
-        .options-group {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .option-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .option-item label {
-            margin: 0;
-            font-weight: normal;
-        }
-
-        .option-item input[type="number"] {
-            width: 80px;
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .option-item select {
-            padding: 8px 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-            background: white;
-        }
-
-        .preview-area {
-            padding: 30px;
-            min-height: 400px;
-        }
-
-        .char-row {
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-            border-bottom: 1px dashed #e9ecef;
-            padding-bottom: 12px;
-        }
-
-        .char-row:last-child {
-            border-bottom: none;
-        }
-
-        .char-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 6px;
-            flex-wrap: wrap;
-        }
-
-        .char-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
+        .tool-icon {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--c1), var(--c2));
+            font-size: 1.7em;
         }
 
-        .char-title {
-            font-size: 32px;
-            font-weight: bold;
-            color: #333;
-            line-height: 1;
-            text-align: center;
+        .tool-card h2 {
+            font-size: 1.22em;
+            color: #222;
         }
 
-        .char-pinyin {
-            font-size: 12px;
-            color: #667eea;
-            font-weight: bold;
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-
-        .stroke-demo-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .tool-card p {
+            font-size: 0.93em;
+            color: #767683;
+            line-height: 1.6;
             flex: 1;
-            flex-wrap: wrap;
         }
 
-        .section-label {
-            font-size: 12px;
-            color: #666;
-            font-weight: bold;
-            white-space: nowrap;
+        .tool-enter {
+            font-size: 0.86em;
+            font-weight: 700;
+            color: var(--c1);
         }
 
-        .practice-demo-section {
-            margin-top: 8px;
+        .tool-card:hover .tool-enter {
+            text-decoration: underline;
         }
 
-        .stroke-sequence {
-            display: flex;
-            gap: 3px;
-            flex-wrap: wrap;
-            align-items: flex-start;
-        }
-
-        .practice-sequence {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            align-items: flex-start;
-        }
-
-        .stroke-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .practice-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-
-        /* 笔画演示格子 - 小号无田字格 */
-        .grid-container-small {
-            position: relative;
-            width: 22px;
-            height: 22px;
-            border: 1px solid #ddd;
-            background: white;
-        }
-
-        /* 练习格子 - 带田字格 */
-        .grid-container {
-            position: relative;
-            width: 45px;
-            height: 45px;
-            border: 1px solid #4CAF50;
-            background: white;
-        }
-
-        /* 田字格样式 - 只用于练习格子 */
-        .grid-container .grid-line-h,
-        .grid-container .grid-line-v {
-            position: absolute;
-            background: none;
-        }
-
-        .grid-container .grid-line-h {
-            width: 100%;
-            height: 0;
-            top: 50%;
-            left: 0;
-            border-top: 1px dashed #4CAF50;
-        }
-
-        .grid-container .grid-line-v {
-            width: 0;
-            height: 100%;
-            top: 0;
-            left: 50%;
-            border-left: 1px dashed #4CAF50;
-        }
-
-        .stroke-label {
-            font-size: 7px;
-            color: #999;
-            line-height: 1;
-        }
-
-        .practice-label {
-            font-size: 9px;
-            color: #666;
-            line-height: 1;
-        }
-
-        /* 描红格和纯练格样式区分 */
-        .practice-item:has(.practice-label:contains('描红')) .grid-container {
-            background: #fffef8;
-            /* 描红格略带米黄色 */
-        }
-
-        .practice-item:has(.practice-label:contains('练习')) .grid-container {
-            background: white;
-            /* 纯练格纯白色 */
-        }
-
-        .no-content {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-            font-size: 1.2em;
-        }
-
-        .no-content::before {
-            content: "✏️";
-            display: block;
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
-
-        .hint {
-            background: #e7f3ff;
-            border-left: 4px solid #2196F3;
-            padding: 12px 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            font-size: 14px;
-            color: #333;
-        }
-
-        .hint strong {
-            color: #2196F3;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #667eea;
-            font-size: 16px;
-        }
-
-        /* 打印样式 */
-        @media print {
-            body {
-                background: white;
-                padding: 0;
+        /* ===== 响应式 ===== */
+        @media (max-width: 600px) {
+            .hero {
+                padding: 48px 16px 80px;
             }
 
-            .container {
-                box-shadow: none;
-                border-radius: 0;
-                max-width: 100%;
+            .hero h1 {
+                font-size: 2em;
             }
 
-            .control-panel {
-                display: none;
+            .tools-wrap {
+                margin-top: -44px;
+                padding: 0 16px 40px;
             }
 
-            .preview-area {
-                padding: 8mm;
-            }
-
-            /* 默认双列 */
-            .preview-area.print-layout-2 {
-                column-count: 2;
-                column-gap: 10mm;
-            }
-
-            /* 单列 */
-            .preview-area.print-layout-1 {
-                column-count: 1;
-            }
-
-            .char-row {
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                display: inline-block;
-                width: 100%;
-            }
-
-            .char-header {
-                margin-bottom: 4px;
-                gap: 6px;
-            }
-
-            .char-title {
-                font-size: 24px;
-            }
-
-            .char-pinyin {
-                font-size: 10px;
-            }
-
-            .section-label {
-                display: none;
-                /* 隐藏"笔画顺序"标签，节省空间 */
-            }
-
-            .stroke-sequence {
-                gap: 2px;
-            }
-
-            .stroke-label {
-                font-size: 6px;
-            }
-
-            .practice-sequence {
-                gap: 4px;
-            }
-
-            .stroke-label,
-            .practice-label {
-                font-size: 7px;
-            }
-
-            /* 笔画演示格子 - 打印时更小 */
-            .grid-container-small {
-                width: 15px;
-                height: 15px;
-            }
-
-            /* 练习格子 - 保持合适大小 */
-            .grid-container {
-                width: 28px;
-                height: 28px;
-            }
-
-            .char-info {
-                min-width: 50px;
-            }
-
-            .practice-demo-section {
-                margin-top: 4px;
-            }
-
-            .stroke-sequence,
-            .practice-sequence {
-                max-width: 100%;
-            }
-
-            @page {
-                size: A4 portrait;
-                margin: 12mm 8mm;
-            }
-        }
-
-        /* 小屏幕适配 */
-        @media (max-width: 768px) {
-            .grid-container {
-                width: 80px;
-                height: 80px;
-            }
-
-            .stroke-sequence {
-                gap: 10px;
+            .tool-card {
+                padding: 22px 20px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🖌️ 喵字帖</h1>
-            <p>看拼音、学笔画、练书写，一笔一划写好字</p>
-            <nav class="nav-links">
-                <span class="nav-link active" aria-current="page">📝 笔画练习</span>
-                <a href="chaozi.html" class="nav-link">✍️ 抄字模式</a>
-                <a href="pinyin.html" class="nav-link">📖 文章注音</a>
-                <a href="tingxie.html" class="nav-link">🔊 生字听写</a>
-                <a href="mingtie.html" class="nav-link">🏷️ 姓名贴</a>
-                <a href="kousuan.html" class="nav-link">🧮 口算速练</a>
-            </nav>
-        </div>
-
-        <div class="control-panel">
-            <div class="hint">
-                <strong>💡 使用说明：</strong>每个汉字显示拼音和笔画顺序，下方大格子用于描红练习。上方看、下方写，非常适合小朋友学习！
-            </div>
-
-            <div class="input-group">
-                <label for="charInput">输入要练习的文字：</label>
-                <textarea id="charInput" rows="2" placeholder="请输入要练习的汉字，例如：春夏秋冬 或 一二三四五"></textarea>
-            </div>
-
-            <div class="options-group">
-                <div class="option-item">
-                    <label>选择年级：</label>
-                    <select id="gradeSelect">
-                        <option value="all">全部年级</option>
-                        <option value="1-1" selected>一年级上册</option>
-                        <option value="1-2">一年级下册</option>
-                        <option value="2-1">二年级上册</option>
-                        <option value="2-2">二年级下册</option>
-                        <option value="3-1">三年级上册</option>
-                        <option value="3-2">三年级下册</option>
-                        <option value="4-1">四年级上册</option>
-                        <option value="4-2">四年级下册</option>
-                        <option value="5-1">五年级上册</option>
-                        <option value="5-2">五年级下册</option>
-                        <option value="6-1">六年级上册</option>
-                        <option value="6-2">六年级下册</option>
-                    </select>
-                </div>
-
-                <div class="option-item">
-                    <label>打印布局：</label>
-                    <select id="printLayout">
-                        <option value="2" selected>双列打印</option>
-                        <option value="1">单列打印</option>
-                    </select>
-                </div>
-
-                <div class="option-item">
-                    <label>大小：</label>
-                    <input type="number" id="gridSize" value="45" min="35" max="70" step="5">
-                    <span>像素</span>
-                </div>
-
-                <div class="option-item">
-                    <label>透明度：</label>
-                    <input type="number" id="opacity" value="25" min="10" max="60" step="5">
-                    <span>%</span>
-                </div>
-
-                <div class="option-item">
-                    <label>描格数量：</label>
-                    <input type="number" id="traceCount" value="4" min="0" max="15">
-                    <span style="font-size: 12px; color: #999;">（有指导）</span>
-                </div>
-
-                <div class="option-item">
-                    <label>练格数量：</label>
-                    <input type="number" id="blankCount" value="2" min="0" max="15">
-                    <span style="font-size: 12px; color: #999;">（空白）</span>
-                </div>
-
-                <div class="option-item">
-                    <label>随机字数：</label>
-                    <input type="number" id="randomCount" value="16" min="1" max="50">
-                </div>
-            </div>
-
-            <div class="button-group">
-                <button class="btn-primary" onclick="generateSheet()">生成练字帖</button>
-                <button class="btn-secondary" onclick="generateRandom()">随机生成</button>
-                <button class="btn-print" onclick="printSheet()">打印练字帖</button>
-            </div>
-        </div>
-
-        <div class="preview-area" id="previewArea">
-            <div class="no-content">
-                请输入文字或点击"随机生成"开始制作练字帖
-            </div>
-        </div>
-
-        <footer class="footer">
-            <p>
-                基于 <a href="https://hanziwriter.org/" target="_blank" rel="noopener noreferrer">Hanzi Writer</a> 和
-                <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">Pinyin Pro</a>
-                &nbsp;|&nbsp;
-                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub 开源</a>
-                &nbsp;|&nbsp; MIT License · 专为小学生设计的在线练字帖工具
-            </p>
-        </footer>
+    <div class="hero">
+        <div class="hero-logo">🐱</div>
+        <h1>喵字帖</h1>
+        <p class="hero-tagline">专为小学生打造的免费练字与学习工具箱</p>
     </div>
 
-    <script>
-
-        let writerInstances = [];
-
-        // 生成指定文字的练字帖
-        function generateSheet() {
-            const input = document.getElementById('charInput').value.trim();
-
-            if (!input) {
-                alert('请输入要练习的文字！');
-                return;
-            }
-
-            const chars = input.split('').filter(char => char.trim() && /[\u4e00-\u9fa5]/.test(char));
-
-            if (chars.length === 0) {
-                alert('请输入有效的汉字！');
-                return;
-            }
-
-            renderSheet(chars);
-        }
-
-        // 随机生成练字帖
-        function generateRandom() {
-            const randomCount = parseInt(document.getElementById('randomCount').value) || 8;
-            const grade = document.getElementById('gradeSelect').value;
-
-            // 根据选择的年级获取字库
-            let charPool;
-            if (grade === 'all') {
-                charPool = allChars;
-            } else {
-                charPool = gradeChars[grade] || allChars;
-            }
-
-            if (charPool.length === 0) {
-                alert('所选年级字库为空！');
-                return;
-            }
-
-            // 随机选择字数，不超过字库总数
-            const actualCount = Math.min(randomCount, charPool.length);
-            const shuffled = [...charPool].sort(() => Math.random() - 0.5);
-            const chars = shuffled.slice(0, actualCount);
-
-            document.getElementById('charInput').value = chars.join('');
-            renderSheet(chars);
-        }
-
-        // 渲染练字帖
-        function renderSheet(chars) {
-            const previewArea = document.getElementById('previewArea');
-            previewArea.innerHTML = '<div class="loading">正在生成练字帖，请稍候...</div>';
-
-            // 清除之前的实例
-            writerInstances = [];
-
-            // 重置打印布局类
-            const printLayout = document.getElementById('printLayout').value;
-            previewArea.className = 'preview-area print-layout-' + printLayout;
-
-            setTimeout(() => {
-                const container = document.createElement('div');
-
-                chars.forEach((char, charIndex) => {
-                    const row = createCharRow(char, charIndex);
-                    container.appendChild(row);
-                });
-
-                previewArea.innerHTML = '';
-                previewArea.className = 'preview-area print-layout-' + printLayout;
-                previewArea.appendChild(container);
-            }, 100);
-        }
-
-        // 获取拼音
-        function getPinyin(char) {
-            try {
-                // 使用 pinyin-pro 库
-                if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) {
-                    return pinyinPro.pinyin(char, { toneType: 'symbol' });
-                }
-            } catch (error) {
-                console.log('拼音库未加载');
-            }
-            return '';
-        }
-
-        // 创建单个汉字的行
-        function createCharRow(char, charIndex) {
-            const row = document.createElement('div');
-            row.className = 'char-row';
-
-            // 头部区域（汉字+拼音+笔画演示）
-            const header = document.createElement('div');
-            header.className = 'char-header';
-
-            // 汉字信息（汉字+拼音）
-            const charInfo = document.createElement('div');
-            charInfo.className = 'char-info';
-
-            const title = document.createElement('div');
-            title.className = 'char-title';
-            title.textContent = char;
-            charInfo.appendChild(title);
-
-            const pinyin = document.createElement('div');
-            pinyin.className = 'char-pinyin';
-            pinyin.textContent = getPinyin(char);
-            charInfo.appendChild(pinyin);
-
-            header.appendChild(charInfo);
-
-            // 笔画演示区域（同一行）
-            const demoSection = document.createElement('div');
-            demoSection.className = 'stroke-demo-section';
-
-            const sequence = document.createElement('div');
-            sequence.className = 'stroke-sequence';
-            sequence.id = `sequence-${charIndex}`;
-            demoSection.appendChild(sequence);
-
-            header.appendChild(demoSection);
-            row.appendChild(header);
-
-            // 描红练习区域（独立一行）
-            const practiceSection = document.createElement('div');
-            practiceSection.className = 'practice-demo-section';
-
-            const practiceSeq = document.createElement('div');
-            practiceSeq.className = 'practice-sequence';
-            practiceSeq.id = `practice-${charIndex}`;
-            practiceSection.appendChild(practiceSeq);
-
-            row.appendChild(practiceSection);
-
-            // 延迟初始化，确保DOM已渲染
-            setTimeout(() => initCharStrokes(char, charIndex), 200);
-
-            return row;
-        }
-
-        // 初始化汉字的笔画序列
-        function initCharStrokes(char, charIndex) {
-            const gridSize = parseInt(document.getElementById('gridSize').value) || 45;
-            // 允许0值，使用 ?? 而不是 ||
-            const traceCountInput = document.getElementById('traceCount').value;
-            const blankCountInput = document.getElementById('blankCount').value;
-            const traceCount = traceCountInput !== '' ? parseInt(traceCountInput) : 4;
-            const blankCount = blankCountInput !== '' ? parseInt(blankCountInput) : 2;
-            const totalPracticeCount = traceCount + blankCount;
-            const opacity = parseInt(document.getElementById('opacity').value) / 100 || 0.25;
-            const sequenceContainer = document.getElementById(`sequence-${charIndex}`);
-            const practiceContainer = document.getElementById(`practice-${charIndex}`);
-
-            if (!sequenceContainer || !practiceContainer) return;
-
-            // 创建一个临时的writer来获取笔画数
-            const tempDiv = document.createElement('div');
-            tempDiv.style.position = 'absolute';
-            tempDiv.style.left = '-9999px';
-            document.body.appendChild(tempDiv);
-
-            try {
-                const tempWriter = HanziWriter.create(tempDiv, char, {
-                    width: gridSize,
-                    height: gridSize,
-                    showCharacter: false,
-                    onLoadCharDataSuccess: function (charData) {
-                        // 数据加载成功后处理
-                        try {
-                            const strokeCount = charData.strokes.length;
-                            document.body.removeChild(tempDiv);
-
-                            // 上方：为每个笔画创建格子（演示笔画顺序）
-                            for (let i = 1; i <= strokeCount; i++) {
-                                const item = document.createElement('div');
-                                item.className = 'stroke-item';
-
-                                const gridContainer = document.createElement('div');
-                                gridContainer.className = 'grid-container-small';
-                                // 笔画演示格子固定为22px，不受gridSize影响
-                                gridContainer.style.width = '22px';
-                                gridContainer.style.height = '22px';
-                                gridContainer.id = `char-${charIndex}-demo-${i}`;
-                                // 笔画演示格子不添加田字格线
-
-                                const label = document.createElement('div');
-                                label.className = 'stroke-label';
-                                label.textContent = `${i}`;
-
-                                item.appendChild(gridContainer);
-                                item.appendChild(label);
-                                sequenceContainer.appendChild(item);
-
-                                // 初始化这个格子，显示前i笔（笔画演示用实色，固定22px）
-                                setTimeout(() => {
-                                    initStrokeGrid(char, charIndex, i, strokeCount, 22, 1.0, false, true);
-                                }, i * 30);
-                            }
-
-                            // 下方：创建练习格子
-                            for (let j = 0; j < totalPracticeCount; j++) {
-                                const practiceItem = document.createElement('div');
-                                practiceItem.className = 'practice-item';
-
-                                const practiceGrid = document.createElement('div');
-                                practiceGrid.className = 'grid-container';
-                                practiceGrid.style.width = gridSize + 'px';
-                                practiceGrid.style.height = gridSize + 'px';
-                                practiceGrid.id = `char-${charIndex}-practice-${j}`;
-                                practiceGrid.innerHTML = `
-                                    <div class="grid-line-h"></div>
-                                    <div class="grid-line-v"></div>
-                                `;
-
-                                // 添加标签区分描红格和纯练格
-                                const label = document.createElement('div');
-                                label.className = 'practice-label';
-                                if (j < traceCount) {
-                                    label.textContent = '描红';
-                                } else {
-                                    label.textContent = '练习';
-                                }
-
-                                practiceItem.appendChild(practiceGrid);
-                                practiceItem.appendChild(label);
-                                practiceContainer.appendChild(practiceItem);
-
-                                // 初始化格子
-                                // 前 traceCount 个格子显示描红（浅色文字）
-                                // 后面的格子完全空白
-                                const isTrace = j < traceCount;
-                                setTimeout(() => {
-                                    if (isTrace) {
-                                        // 描红格：显示浅色文字
-                                        initStrokeGrid(char, charIndex, strokeCount, strokeCount, gridSize, opacity, false, false, j);
-                                    }
-                                    // 纯练格：不显示任何内容，保持空白
-                                }, (strokeCount + j + 1) * 30);
-                            }
-
-                        } catch (error) {
-                            console.error(`处理汉字"${char}"的笔画数据时出错:`, error);
-                            sequenceContainer.innerHTML = `<div style="color: #999; padding: 20px;">无法处理"${char}"的笔画数据</div>`;
-                        }
-                    },
-                    onLoadCharDataError: function (error) {
-                        // 数据加载失败
-                        document.body.removeChild(tempDiv);
-                        console.error(`无法加载汉字"${char}"的笔画数据:`, error);
-                        sequenceContainer.innerHTML = `<div style="color: #999; padding: 20px;">无法加载"${char}"的笔画数据，可能是生僻字或网络问题</div>`;
-                    }
-                });
-
-            } catch (error) {
-                console.error(`创建汉字"${char}"时出错:`, error);
-                if (document.body.contains(tempDiv)) {
-                    document.body.removeChild(tempDiv);
-                }
-                sequenceContainer.innerHTML = `<div style="color: #999; padding: 20px;">无法创建"${char}"，可能是生僻字</div>`;
-            }
-        }
-
-        // 初始化单个笔画格子
-        function initStrokeGrid(char, charIndex, strokeIndex, totalStrokes, gridSize, opacity, isFinal = false, isDemo = false, practiceIndex = 0) {
-            // 根据类型决定容器 ID
-            let containerId;
-            if (isDemo) {
-                containerId = `char-${charIndex}-demo-${strokeIndex}`;
-            } else if (isFinal) {
-                containerId = `char-${charIndex}-stroke-final`;
-            } else {
-                containerId = `char-${charIndex}-practice-${practiceIndex}`;
-            }
-
-            try {
-                // 使用一个临时容器来加载数据，避免在目标容器中创建多余的元素
-                const tempContainer = document.createElement('div');
-                tempContainer.style.position = 'absolute';
-                tempContainer.style.left = '-9999px';
-                document.body.appendChild(tempContainer);
-
-                const writer = HanziWriter.create(tempContainer, char, {
-                    width: gridSize,
-                    height: gridSize,
-                    showCharacter: false,
-                    showOutline: false,
-                    onLoadCharDataSuccess: function (charData) {
-                        // 数据加载成功后，手动绘制前 N 笔
-                        try {
-                            const container = document.getElementById(containerId);
-                            if (!container) {
-                                console.error(`找不到容器: ${containerId}`);
-                                document.body.removeChild(tempContainer);
-                                return;
-                            }
-
-                            // 创建 SVG 元素
-                            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                            svg.setAttribute('width', gridSize);
-                            svg.setAttribute('height', gridSize);
-                            // Hanzi Writer 使用 0-1024 的坐标系统，原点在左上角
-                            svg.setAttribute('viewBox', '0 0 1024 1024');
-                            svg.style.position = 'absolute';
-                            svg.style.top = '0';
-                            svg.style.left = '0';
-                            svg.style.pointerEvents = 'none';
-
-                            // 创建一个 group
-                            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                            // Hanzi Writer 的字符数据通常需要变换：Y轴翻转，然后移动
-                            g.setAttribute('transform', 'scale(1, -1) translate(0, -900)');
-
-                            // 绘制前 strokeIndex 笔
-                            for (let i = 0; i < strokeIndex && i < charData.strokes.length; i++) {
-                                const strokePath = charData.strokes[i];
-                                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                                path.setAttribute('d', strokePath);
-                                // 笔画演示用实色，练习用浅色
-                                if (isDemo) {
-                                    path.setAttribute('fill', '#333'); // 实色黑色
-                                } else {
-                                    path.setAttribute('fill', `rgba(255, 107, 107, ${opacity})`); // 浅红色
-                                }
-                                path.setAttribute('stroke', 'none');
-                                g.appendChild(path);
-                            }
-
-                            svg.appendChild(g);
-                            container.appendChild(svg);
-
-                            // 清理临时容器
-                            document.body.removeChild(tempContainer);
-
-                        } catch (error) {
-                            console.error(`显示笔画失败:`, error);
-                            if (document.body.contains(tempContainer)) {
-                                document.body.removeChild(tempContainer);
-                            }
-                        }
-                    },
-                    onLoadCharDataError: function (error) {
-                        console.error(`加载字符数据失败:`, error);
-                        if (document.body.contains(tempContainer)) {
-                            document.body.removeChild(tempContainer);
-                        }
-                    }
-                });
-
-            } catch (error) {
-                console.error(`初始化格子失败:`, error);
-            }
-        }
-
-        // 打印功能
-        function printSheet() {
-            const previewArea = document.getElementById('previewArea');
-
-            if (!previewArea.querySelector('.char-row')) {
-                alert('请先生成练字帖再打印！');
-                return;
-            }
-
-            // 应用打印布局设置
-            const printLayout = document.getElementById('printLayout').value;
-            previewArea.className = 'preview-area print-layout-' + printLayout;
-
-            window.print();
-        }
-
-        // 回车键快捷生成
-        document.getElementById('charInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                generateSheet();
-            }
-        });
-
-        // 监听格子大小变化
-        document.getElementById('gridSize').addEventListener('change', function () {
-            const input = document.getElementById('charInput').value.trim();
-            if (input) {
-                const chars = input.split('').filter(char => char.trim() && /[\u4e00-\u9fa5]/.test(char));
-                if (chars.length > 0) {
-                    renderSheet(chars);
-                }
-            }
-        });
-
-        // 监听透明度变化
-        document.getElementById('opacity').addEventListener('change', function () {
-            const input = document.getElementById('charInput').value.trim();
-            if (input) {
-                const chars = input.split('').filter(char => char.trim() && /[\u4e00-\u9fa5]/.test(char));
-                if (chars.length > 0) {
-                    renderSheet(chars);
-                }
-            }
-        });
-    </script>
+    <main class="tools-wrap">
+        <div class="tools-grid">
+            <a class="tool-card" href="bihua.html" style="--c1:#667eea;--c2:#764ba2;">
+                <span class="tool-icon">🖌️</span>
+                <h2>笔画练习</h2>
+                <p>看拼音、学笔画，逐笔演示汉字书写顺序，边看边描红练习。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+
+            <a class="tool-card" href="chaozi.html" style="--c1:#11998e;--c2:#38ef7d;">
+                <span class="tool-icon">✍️</span>
+                <h2>抄字模式</h2>
+                <p>紧凑排版抄写文章句子，每个字占用极小空间，省纸又高效。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+
+            <a class="tool-card" href="pinyin.html" style="--c1:#ff6b6b;--c2:#feca57;">
+                <span class="tool-icon">📖</span>
+                <h2>文章注音</h2>
+                <p>输入任意文章，一键批量添加拼音标注，帮助小朋友轻松阅读。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+
+            <a class="tool-card" href="tingxie.html" style="--c1:#4facfe;--c2:#00f2fe;">
+                <span class="tool-icon">🔊</span>
+                <h2>生字听写</h2>
+                <p>语音朗读生字词语，自动或手动听写，检验生字掌握情况。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+
+            <a class="tool-card" href="mingtie.html" style="--c1:#fa709a;--c2:#fee140;">
+                <span class="tool-icon">🏷️</span>
+                <h2>姓名贴生成器</h2>
+                <p>输入班级、姓名、学号，一键批量生成 A4 打印版姓名贴。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+
+            <a class="tool-card" href="kousuan.html" style="--c1:#f093fb;--c2:#f5576c;">
+                <span class="tool-icon">🧮</span>
+                <h2>口算速练</h2>
+                <p>虚拟键盘、手写识别、语音输入三种答题方式，越算越聪明。</p>
+                <span class="tool-enter">开始使用 →</span>
+            </a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>
+            基于 <a href="https://hanziwriter.org/" target="_blank" rel="noopener noreferrer">Hanzi Writer</a> 和
+            <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">Pinyin Pro</a>
+            &nbsp;|&nbsp;
+            <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub 开源</a>
+            &nbsp;|&nbsp; MIT License · 专为小学生设计的在线学习工具箱
+        </p>
+    </footer>
 </body>
 
 </html>

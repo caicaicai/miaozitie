@@ -1,7 +1,9 @@
 /* =========================================================
    喵字帖 - 全站共享样式
-   统一：品牌主题色、页头、品牌角标、页面导航、页脚
-   由 index.html / chaozi.html / pinyin.html / mingtie.html / kousuan.html 共同引用
+   统一：品牌主题色、页头、返回首页链接、页脚
+   由 bihua.html / chaozi.html / pinyin.html / tingxie.html /
+   mingtie.html / kousuan.html 共同引用（index.html 首页除外，
+   首页是独立设计的导航页）
    ========================================================= */
 
 :root {
@@ -18,22 +20,25 @@
     text-align: center;
 }
 
-.header .brand-badge {
-    display: inline-block;
+/* 返回首页链接 - 每个功能页唯一的导航入口 */
+.header .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     margin-bottom: 12px;
-    padding: 4px 14px;
+    padding: 6px 16px;
     background: rgba(255, 255, 255, 0.16);
     border-radius: 20px;
     color: white;
     text-decoration: none;
     font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.3px;
-    transition: background 0.25s;
+    transition: all 0.25s;
 }
 
-.header .brand-badge:hover {
+.header .back-link:hover {
     background: rgba(255, 255, 255, 0.3);
+    transform: translateX(-3px);
 }
 
 .header h1 {
@@ -45,39 +50,6 @@
 .header p {
     font-size: 1em;
     opacity: 0.9;
-}
-
-/* ===== 页面导航 ===== */
-.header .nav-links {
-    margin-top: 16px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.header .nav-link {
-    display: inline-block;
-    padding: 7px 18px;
-    background: rgba(255, 255, 255, 0.16);
-    color: white;
-    text-decoration: none;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.25s;
-}
-
-.header .nav-link:hover {
-    background: rgba(255, 255, 255, 0.32);
-    transform: translateY(-2px);
-}
-
-.header .nav-link.active {
-    background: white;
-    color: var(--brand-primary-dark);
-    font-weight: 700;
-    cursor: default;
 }
 
 /* ===== 页脚 ===== */
@@ -109,11 +81,6 @@
 
     .header h1 {
         font-size: 1.6em;
-    }
-
-    .header .nav-link {
-        padding: 5px 12px;
-        font-size: 12px;
     }
 }
 

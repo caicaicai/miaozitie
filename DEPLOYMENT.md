@@ -65,11 +65,11 @@ git push -u origin main
 
 #### 2. 准备文件
 
-将以下文件打包（不需要 .git 目录）：
-- `stroke-by-stroke.html`
-- `ziku.txt`
-- `README.md`
-- `.cursor/` 目录（可选）
+将根目录下的全部文件打包上传（不需要 .git 目录），包括：
+- `index.html`、`bihua.html`、`chaozi.html`、`pinyin.html`、`tingxie.html`、`mingtie.html`、`kousuan.html`
+- `common.css`、`ziku-data.js`
+- `hanzi-writer.min.js`、`pinyin-pro.min.js`、`tf.min.js`、`mnist-model/`
+- `ziku.txt`、`README.md`
 
 #### 3. 上传并部署
 
@@ -120,7 +120,7 @@ Cloudflare Pages 自动提供：
 ## 🐛 常见问题
 
 ### Q: 页面显示 404
-A: 确保 `stroke-by-stroke.html` 在根目录，或者设置为默认首页
+A: 确保 `index.html` 在根目录（大多数静态托管平台会自动将其作为默认首页）
 
 ### Q: 外部库加载失败
 A: 本项目使用 CDN 加载 Hanzi Writer 和 Pinyin Pro，确保网络连接正常
