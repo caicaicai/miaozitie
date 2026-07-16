@@ -271,7 +271,7 @@
                 <ul>
                     <li>这是实验性功能，依赖社区提供的浏览器版模型文件，可能不稳定或加载失败</li>
                     <li>首次使用需要下载约 <strong>500MB 以上</strong>的模型数据，仅下载一次，浏览器会自动缓存；请在网络良好时使用</li>
-                    <li>如果设备不支持 WebGPU，会自动退回 CPU(WASM) 模式运行，生成速度会明显变慢，请耐心等待</li>
+                    <li>本模型用的是 4bit 量化格式，<strong>主要依赖 WebGPU 显卡加速</strong>：完全没有可用显卡时可能直接加载失败，而不只是变慢；就算检测到了 WebGPU，<strong>集成显卡（核显）对 1B 参数模型来说仍然会比独立显卡慢很多</strong>，请耐心等待并降低速度预期</li>
                     <li>这里只是一个用于测试模型效果的<strong>对话调试窗口</strong>；具体的"AI 辅助生成"功能（如听写词语生成）已经分别做进了对应的功能页面里，加载过一次模型后，那些页面会自动出现对应入口</li>
                     <li>模型权重遵循 OpenBMB「通用模型许可协议」：学术研究免费，如需商业用途需邮件登记，详见
                         <a href="https://github.com/OpenBMB/General-Model-License" target="_blank" rel="noopener noreferrer">协议原文</a>
@@ -319,18 +319,34 @@
     </div>
 
     <script type="module">
-        import { loadAIModel, generateWithAI, supportsWebGPU } from './ai-engine.js';
+        import { loadAIModel, generateWithAI, detectGPUAdapter } from './ai-engine.js';
 
         const chatHistory = [
             { role: 'system', content: '你是一个专为小学生内容创作服务的助手，回答要简洁、健康、适合儿童阅读，使用中文回复。' }
         ];
 
-        function initDeviceStatus() {
+        async function initDeviceStatus() {
             const el = document.getElementById('deviceStatus');
-            if (supportsWebGPU()) {
-                el.textContent = '✅ 检测到 WebGPU 加速支持，将使用较快的 GPU 模式运行。';
+            el.textContent = '正在检测显卡加速能力...';
+
+            const gpu = await detectGPUAdapter();
+
+            if (!gpu.available) {
+                el.textContent = '❌ 未检测到可用的 WebGPU 显卡适配器。本模型使用的 4bit 量化格式主要依赖 WebGPU，' +
+                    '没有显卡加速很可能会加载失败或几乎无法运行，不只是"慢"。建议换用支持 WebGPU 的较新 Chrome / Edge 浏览器，并确认设备有可用显卡。';
+                return;
+            }
+
+            const info = gpu.info || {};
+            const desc = [info.vendor, info.architecture, info.device, info.description]
+                .filter(Boolean).join(' / ');
+
+            if (gpu.isFallback) {
+                el.textContent = '⚠️ 检测到的 WebGPU 适配器是软件模拟（并非真实显卡加速），推理速度会和纯 CPU 差不多，非常慢。';
             } else {
-                el.textContent = '⚠️ 未检测到 WebGPU 支持，将使用 CPU(WASM) 模式运行，生成速度会比较慢。建议使用最新版 Chrome / Edge 浏览器。';
+                el.textContent = `✅ 检测到 WebGPU 显卡加速${desc ? '（' + desc + '）' : ''}。` +
+                    '提示：这里只能检测到有没有可用显卡，无法准确判断是独立显卡还是集成显卡（核显）——如果是集成显卡，' +
+                    '对 1B 参数量的模型来说仍然会比较慢，请耐心等待，不代表功能出错。';
             }
         }
 

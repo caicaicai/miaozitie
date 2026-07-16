@@ -14,6 +14,46 @@ const READY_FLAG_KEY = 'miaozitie_ai_model_ready';
 
 let generatorPromise = null;
 
+// 只判断 `navigator.gpu` 是否存在并不可靠：有些浏览器/设备组合下这个 API 存在，
+// 但实际拿不到真实显卡适配器（会得到软件模拟的 fallback adapter，速度跟纯 CPU
+// 差不多）；即使拿到了真实适配器，如果是集成显卡（核显），对 1B 参数模型这种
+// 计算量来说仍然会比独立显卡慢很多。这个函数尽量把这些情况区分清楚，方便页面
+// 给用户一个诚实的性能预期，而不是简单地说"支持/不支持 WebGPU"。
+//
+// 另外要注意：q4 量化模型用到的部分算子（如 4bit 的 GatherBlockQuantized）
+// 目前只有 WebGPU 版本的实现、没有对应的 WASM(CPU) 内核，所以如果完全没有可用
+// 的 WebGPU 适配器，这个模型可能不是"慢"，而是直接加载/推理失败。
+export async function detectGPUAdapter() {
+    if (typeof navigator === 'undefined' || !('gpu' in navigator)) {
+        return { available: false, isFallback: false, info: null };
+    }
+
+    try {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) {
+            return { available: false, isFallback: false, info: null };
+        }
+
+        let info = null;
+        try {
+            if (typeof adapter.requestAdapterInfo === 'function') {
+                info = await adapter.requestAdapterInfo();
+            } else if (adapter.info) {
+                info = adapter.info;
+            }
+        } catch (e) {
+            info = null; // 部分浏览器出于隐私考虑限制读取详细信息，拿不到也不影响主流程
+        }
+
+        const isFallback = !!(adapter.isFallbackAdapter || (info && info.isFallbackAdapter));
+        return { available: true, isFallback, info };
+    } catch (e) {
+        return { available: false, isFallback: false, info: null };
+    }
+}
+
+// 同步、粗略的判断（只看 API 是否存在），仅用于加载模型时决定 device 参数。
+// 想要准确判断适配器情况、并给用户展示诊断信息，请用上面的 detectGPUAdapter()。
 export function supportsWebGPU() {
     return typeof navigator !== 'undefined' && 'gpu' in navigator;
 }
@@ -75,17 +115,59 @@ function extractText(result) {
     return '';
 }
 
+// 这个社区 ONNX 导出版本的 tokenizer_config.json 没有带 chat_template，
+// 直接把 messages 数组传给 pipeline 会报错（apply_chat_template 失败）。
+// 所以这里改成手动按 MiniCPM5 官方的 ChatML 格式拼接成一段纯文本 prompt，
+// 绕开 apply_chat_template，不依赖这个导出版本是否配置完整。
+function formatChatPrompt(messages) {
+    let prompt = '';
+    messages.forEach(m => {
+        const role = m.role === 'system' || m.role === 'assistant' ? m.role : 'user';
+        prompt += `<|im_start|>${role}\n${m.content}<|im_end|>\n`;
+    });
+    prompt += '<|im_start|>assistant\n';
+    return prompt;
+}
+
+// MiniCPM5 默认会走"深度思考"模式（回复前有一长段推理过程），在浏览器端会明显更慢、
+// 更耗 token。除非用户自己在消息末尾写了 /think 或 /no_think，否则默认追加
+// /no_think 强制走"快速回答"模式，详见官方文档中 enable_thinking 的说明。
+function withNoThinkDefault(messages) {
+    if (!messages.length) return messages;
+    const lastIndex = messages.length - 1;
+    const last = messages[lastIndex];
+    if (last.role !== 'user') return messages;
+    if (/\/(no_)?think\s*$/i.test(last.content.trim())) return messages;
+
+    const copy = messages.slice();
+    copy[lastIndex] = Object.assign({}, last, { content: last.content + ' /no_think' });
+    return copy;
+}
+
+function cleanGeneratedText(text) {
+    if (!text) return '';
+    const endIdx = text.indexOf('<|im_end|>');
+    if (endIdx !== -1) {
+        text = text.slice(0, endIdx);
+    }
+    return text.trim();
+}
+
 // 用 messages（[{role, content}, ...]）调用模型生成一段文本，返回纯文本结果。
 // 如果模型在当前页面还没加载过，会自动先加载（这一步可能需要等待下载/初始化）。
 export async function generateWithAI(messages, options, progressCallback) {
     const generator = await loadAIModel(progressCallback);
-    const result = await generator(messages, Object.assign({
+    const prompt = formatChatPrompt(withNoThinkDefault(messages));
+
+    const result = await generator(prompt, Object.assign({
         max_new_tokens: 220,
         temperature: 0.7,
         do_sample: true,
-        repetition_penalty: 1.1
+        repetition_penalty: 1.1,
+        return_full_text: false
     }, options || {}));
-    return extractText(result).trim();
+
+    return cleanGeneratedText(extractText(result));
 }
 
 export const AI_MODEL_ID = MODEL_ID;
