@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>口算速练 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
     <script src="tf.min.js"></script>
     <style>
         * {
@@ -16,7 +17,7 @@
 
         body {
             font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             min-height: 100dvh;
             padding: 20px;
@@ -30,46 +31,6 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px 20px 16px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 1.8em;
-            margin-bottom: 4px;
-        }
-
-        .header p {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .header .nav-links {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .header .nav-link {
-            display: inline-block;
-            padding: 5px 12px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 20px;
-            font-size: 12px;
-            transition: all 0.3s;
-        }
-
-        .header .nav-link:hover {
-            background: rgba(255, 255, 255, 0.3);
         }
 
         /* ===== 设置面板 ===== */
@@ -845,26 +806,12 @@
             color: white;
         }
 
-        /* ===== 页脚 ===== */
-        .footer {
-            background: #f8f9fa;
-            padding: 14px;
-            text-align: center;
-            font-size: 11px;
-            color: #999;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .footer a {
-            color: #f5576c;
-            text-decoration: none;
-        }
-
         /* ===== 响应式 ===== */
         @media (max-width: 520px) {
             body { padding: 0; }
             .container { border-radius: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
             .header { border-radius: 0; padding: 16px 16px 12px; }
+            .header .brand-badge { display: none; }
             .header h1 { font-size: 1.5em; }
             .header .nav-links { gap: 6px; }
             .header .nav-link { padding: 4px 10px; font-size: 11px; }
@@ -1094,6 +1041,7 @@
             body { padding: 0; }
             .container { border-radius: 0; max-width: 100%; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
             .header { padding: 8px 16px 6px; }
+            .header .brand-badge { display: none; }
             .header h1 { font-size: 1.2em; margin-bottom: 0; }
             .header p { display: none; }
             .header .nav-links { margin-top: 4px; gap: 4px; }
@@ -1370,7 +1318,7 @@
         @media print {
             body { background: white; padding: 0; }
             .container { box-shadow: none; border-radius: 0; }
-            .header, .setup-panel, .numpad, .footer { display: none; }
+            .setup-panel, .numpad { display: none; }
         }
     </style>
 </head>
@@ -1378,14 +1326,16 @@
 <body>
     <div class="container">
         <header class="header">
+            <a href="index.html" class="brand-badge">🐱 喵字帖</a>
             <h1>🧮 口算速练</h1>
             <p>快速口算训练，越算越聪明！</p>
-            <div class="nav-links">
+            <nav class="nav-links">
                 <a href="index.html" class="nav-link">📝 笔画练习</a>
                 <a href="chaozi.html" class="nav-link">✍️ 抄字模式</a>
                 <a href="pinyin.html" class="nav-link">📖 文章注音</a>
                 <a href="mingtie.html" class="nav-link">🏷️ 姓名贴</a>
-            </div>
+                <span class="nav-link active" aria-current="page">🧮 口算速练</span>
+            </nav>
         </header>
 
         <!-- 设置区域 -->
@@ -1657,8 +1607,10 @@
         </div>
 
         <footer class="footer">
-            <a href="https://github.com/caicaicai/miaozitie" target="_blank">GitHub: caicaicai/miaozitie</a>
-            &nbsp;|&nbsp; 专为小朋友设计的口算训练工具
+            <p>
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub 开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小朋友设计的口算训练工具
+            </p>
         </footer>
     </div>
 

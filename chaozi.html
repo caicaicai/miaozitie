@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>抄字模式 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
     <script src="hanzi-writer.min.js"></script>
     <script src="pinyin-pro.min.js"></script>
     <style>
@@ -16,7 +17,7 @@
 
         body {
             font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -28,47 +29,6 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-            padding: 20px 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2em;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            font-size: 1em;
-            opacity: 0.9;
-        }
-
-        .header .nav-links {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .header .nav-link {
-            display: inline-block;
-            padding: 6px 16px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 20px;
-            font-size: 13px;
-            transition: all 0.3s;
-        }
-
-        .header .nav-link:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
         }
 
         .control-panel {
@@ -352,24 +312,6 @@
         }
 
         /* 页脚隐藏在打印中 */
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .footer a {
-            color: #11998e;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-
         /* 打印样式 */
         @media print {
             @page {
@@ -390,9 +332,7 @@
                 max-width: 100%;
             }
 
-            .header,
-            .control-panel,
-            .footer {
+            .control-panel {
                 display: none;
             }
 
@@ -545,14 +485,16 @@
 <body>
     <div class="container">
         <header class="header">
+            <a href="index.html" class="brand-badge">🐱 喵字帖</a>
             <h1>✍️ 抄字模式</h1>
             <p>紧凑布局，适合抄写文章</p>
-            <div class="nav-links">
+            <nav class="nav-links">
                 <a href="index.html" class="nav-link">📝 笔画练习</a>
+                <span class="nav-link active" aria-current="page">✍️ 抄字模式</span>
                 <a href="pinyin.html" class="nav-link">📖 文章注音</a>
                 <a href="mingtie.html" class="nav-link">🏷️ 姓名贴</a>
                 <a href="kousuan.html" class="nav-link">🧮 口算速练</a>
-            </div>
+            </nav>
         </header>
 
         <div class="control-panel">
@@ -648,9 +590,11 @@
 
         <footer class="footer">
             <p>
-                基于 <a href="https://hanziwriter.org/" target="_blank">Hanzi Writer</a> 和
-                <a href="https://github.com/zh-lx/pinyin-pro" target="_blank">Pinyin Pro</a> |
-                <a href="https://github.com/caicaicai/miaozitie" target="_blank">GitHub</a>
+                基于 <a href="https://hanziwriter.org/" target="_blank" rel="noopener noreferrer">Hanzi Writer</a> 和
+                <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">Pinyin Pro</a>
+                &nbsp;|&nbsp;
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub 开源</a>
+                &nbsp;|&nbsp; MIT License · 紧凑抄字，省纸又高效
             </p>
         </footer>
     </div>

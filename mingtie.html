@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>姓名贴生成器</title>
+    <title>姓名贴 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
     <style>
         * {
             margin: 0;
@@ -25,41 +26,6 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .header .nav-link {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 8px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 20px;
-            font-size: 14px;
-            transition: all 0.3s;
-            margin: 0 5px;
-        }
-
-        .header .nav-link:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
         }
 
         .control-panel {
@@ -220,7 +186,7 @@
         @media print {
             body { background: white; padding: 0; }
             .container { box-shadow: none; border-radius: 0; max-width: 100%; margin: 0; }
-            .header, .control-panel { display: none; }
+            .control-panel { display: none; }
             .preview-area { padding: 0; background: none; display: flex; justify-content: flex-start; }
             .a4-page { 
                 width: 210mm; 
@@ -248,14 +214,16 @@
 <body>
     <div class="container">
         <div class="header">
+            <a href="index.html" class="brand-badge">🐱 喵字帖</a>
             <h1>🏷️ 姓名贴生成器</h1>
             <p>输入班级、姓名、学号，一键生成A4打印版姓名贴</p>
-            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <nav class="nav-links">
                 <a href="index.html" class="nav-link">📝 笔画练习</a>
                 <a href="chaozi.html" class="nav-link">✍️ 抄字模式</a>
                 <a href="pinyin.html" class="nav-link">📖 文章注音</a>
+                <span class="nav-link active" aria-current="page">🏷️ 姓名贴</span>
                 <a href="kousuan.html" class="nav-link">🧮 口算速练</a>
-            </div>
+            </nav>
         </div>
 
         <div class="control-panel">
@@ -290,6 +258,13 @@
                 <!-- 生成的姓名贴会显示在这里 -->
             </div>
         </div>
+
+        <footer class="footer">
+            <p>
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub 开源</a>
+                &nbsp;|&nbsp; MIT License · 一键生成A4打印版姓名贴
+            </p>
+        </footer>
     </div>
 
     <script>
