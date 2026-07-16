@@ -12,6 +12,9 @@ This repo is a static, browser-only Chinese writing/learning practice site for e
 - `kousuan.html`: mental-math drills (numpad / handwriting recognition via `tf.min.js` + MNIST model in `mnist-model/` / voice input).
 - `yunsuanbiao.html`: multiplication/addition/subtraction reference tables, optionally with randomly blanked cells for fill-in practice, printable.
 - `shizhong.html`: analog-clock time-reading practice (interactive quiz + printable worksheet); clock faces are pure CSS/JS (rotated divs), no canvas/SVG/library dependency.
+- `gushi.html`: printable classical-poem cards (recite mode with auto pinyin via Pinyin Pro, or blank-line dictation mode); poem text is hardcoded curated public-domain content — double-check exact wording against a reliable source before adding more poems.
+- `kechengbiao.html`: class timetable generator; the generated table cells are plain `<input>` fields the user types directly into (no per-subject data model).
+- `renminbi.html`: RMB "make the amount" interactive drill (click denominations to match a random target); amounts are tracked internally in 角 (jiao) integer units to avoid floating-point issues.
 
 Shared files, used across multiple pages (a deliberate exception to "inline everything", see below):
 - `common.css`: shared header/back-link/footer styles for every tool page (not used by `index.html`, which has its own standalone hero + card styles).

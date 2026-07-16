@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程表生成器 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select,
+        .option-item input[type="text"],
+        .option-item input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .option-item input[type="number"] {
+            width: 70px;
+        }
+
+        .option-item input[type="text"] {
+            width: 160px;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== 预览区 ===== */
+        .preview-area {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .no-content::before {
+            content: "🗓️";
+            display: block;
+            font-size: 4em;
+            margin-bottom: 16px;
+        }
+
+        .sheet-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sheet-title-row input {
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-bottom: 2px dashed #ccc;
+            padding: 2px 4px;
+            color: #333;
+            background: transparent;
+        }
+
+        .sheet-title-row input:focus {
+            outline: none;
+            border-bottom-color: #4facfe;
+        }
+
+        table.timetable {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 600px;
+        }
+
+        table.timetable th,
+        table.timetable td {
+            border: 1px solid #d7dde5;
+            text-align: center;
+            padding: 0;
+        }
+
+        table.timetable th {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 10px 4px;
+            font-size: 14px;
+        }
+
+        table.timetable td.period-label {
+            background: #eef6ff;
+            font-weight: bold;
+            color: #333;
+            font-size: 13px;
+            padding: 8px 4px;
+            white-space: nowrap;
+        }
+
+        table.timetable td input {
+            width: 100%;
+            height: 42px;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-size: 14px;
+            color: #333;
+            font-family: inherit;
+        }
+
+        table.timetable td input:focus {
+            outline: 2px solid #4facfe;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .control-panel {
+                display: none;
+            }
+
+            .no-content {
+                display: none;
+            }
+
+            table.timetable td input,
+            .sheet-title-row input {
+                border-bottom: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🗓️ 课程表生成器</h1>
+            <p>自定义节数与星期范围，直接在表格里填写课程并打印</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>设置好节数和星期范围后点击"生成课程表"，然后直接在表格每个格子里输入课程名称（如"语文""数学""体育"），填好后点击打印。
+            </div>
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>每天节数：</label>
+                    <select id="periodCount">
+                        <option value="5">5 节</option>
+                        <option value="6">6 节</option>
+                        <option value="7" selected>7 节</option>
+                        <option value="8">8 节</option>
+                        <option value="9">9 节</option>
+                        <option value="10">10 节</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <label>星期范围：</label>
+                    <select id="weekRange">
+                        <option value="5" selected>周一 ~ 周五</option>
+                        <option value="6">周一 ~ 周六</option>
+                        <option value="7">周一 ~ 周日</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <label>主题色：</label>
+                    <select id="themeSelect">
+                        <option value="blue" selected>清新蓝</option>
+                        <option value="pink">活力粉</option>
+                        <option value="green">自然绿</option>
+                        <option value="orange">阳光橙</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="generateTable()">📝 生成课程表</button>
+                <button class="btn btn-print" onclick="printTable()">🖨️ 打印</button>
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="no-content">
+                设置好参数后，点击"生成课程表"
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的课程表生成工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        const themeColors = {
+            blue: ['#4facfe', '#00f2fe'],
+            pink: ['#fa709a', '#fee140'],
+            green: ['#0ba360', '#3cba92'],
+            orange: ['#f6d365', '#fda085']
+        };
+
+        const weekDayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+        function generateTable() {
+            const periodCount = parseInt(document.getElementById('periodCount').value) || 7;
+            const weekRange = parseInt(document.getElementById('weekRange').value) || 5;
+            const theme = document.getElementById('themeSelect').value;
+            const colors = themeColors[theme] || themeColors.blue;
+
+            const area = document.getElementById('previewArea');
+            area.innerHTML = '';
+
+            const titleRow = document.createElement('div');
+            titleRow.className = 'sheet-title-row';
+            titleRow.innerHTML = `
+                <input type="text" value="我的课程表" style="min-width: 160px;">
+                <input type="text" value="班级：______　姓名：______" style="min-width: 220px; font-size: 14px; font-weight: normal;">
+            `;
+            area.appendChild(titleRow);
+
+            const table = document.createElement('table');
+            table.className = 'timetable';
+            table.style.setProperty('--theme1', colors[0]);
+            table.style.setProperty('--theme2', colors[1]);
+
+            const styleTag = document.createElement('style');
+            styleTag.textContent = `
+                table.timetable th { background: linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%) !important; }
+            `;
+            area.appendChild(styleTag);
+
+            const headRow = document.createElement('tr');
+            headRow.appendChild(document.createElement('th'));
+            for (let d = 0; d < weekRange; d++) {
+                const th = document.createElement('th');
+                th.textContent = weekDayNames[d];
+                headRow.appendChild(th);
+            }
+            table.appendChild(headRow);
+
+            for (let p = 1; p <= periodCount; p++) {
+                const tr = document.createElement('tr');
+                const labelCell = document.createElement('td');
+                labelCell.className = 'period-label';
+                labelCell.textContent = `第${p}节`;
+                tr.appendChild(labelCell);
+
+                for (let d = 0; d < weekRange; d++) {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = '';
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                }
+                table.appendChild(tr);
+            }
+
+            area.appendChild(table);
+        }
+
+        function printTable() {
+            if (!document.querySelector('table.timetable')) {
+                alert('请先生成课程表再打印！');
+                return;
+            }
+            window.print();
+        }
+    </script>
+</body>
+
+</html>

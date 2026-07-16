@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>古诗词打印卡 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <script src="pinyin-pro.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%) !important;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .poem-checklist {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background: white;
+        }
+
+        .poem-checklist label {
+            font-size: 13px;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .quick-actions button {
+            padding: 6px 14px;
+            border-radius: 16px;
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .quick-actions button:hover {
+            border-color: #ff8a9e;
+            color: #ff5c7a;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #ff8a9e;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff8a9e 0%, #ff6a88 100%);
+            color: white;
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== 预览区 ===== */
+        .preview-area {
+            padding: 30px;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .no-content::before {
+            content: "📜";
+            display: block;
+            font-size: 4em;
+            margin-bottom: 16px;
+        }
+
+        .poem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .poem-card {
+            border: 1px solid #f0d9de;
+            border-radius: 12px;
+            padding: 18px 20px;
+            background: #fffafb;
+            page-break-inside: avoid;
+        }
+
+        .poem-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 2px solid #ff8a9e;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .poem-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .poem-author {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .poem-line {
+            font-size: 20px;
+            line-height: 2.4;
+            color: #333;
+            letter-spacing: 2px;
+        }
+
+        ruby {
+            ruby-align: center;
+        }
+
+        ruby rt {
+            font-size: 0.45em;
+            color: #ff6a88;
+            font-weight: normal;
+            letter-spacing: 0;
+        }
+
+        .punct {
+            display: inline;
+        }
+
+        .poem-blank-line {
+            height: 30px;
+            border-bottom: 1px dashed #bbb;
+            margin-bottom: 14px;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 10mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .control-panel {
+                display: none;
+            }
+
+            .no-content {
+                display: none;
+            }
+
+            .poem-card {
+                border-color: #ddd;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>📜 古诗词打印卡</h1>
+            <p>课本必背古诗，自动标注拼音，可生成背诵卡或默写卡</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>勾选要练习的古诗，选择"背诵卡"（显示全文+拼音）或"默写卡"（只留空行，闭卷默写用），点击生成后打印。
+            </div>
+
+            <div class="poem-checklist" id="poemChecklist"></div>
+
+            <div class="quick-actions">
+                <button onclick="toggleAll(true)">全选</button>
+                <button onclick="toggleAll(false)">全不选</button>
+                <button onclick="pickRandom(5)">🎲 随机选 5 首</button>
+            </div>
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>卡片模式：</label>
+                    <select id="cardMode">
+                        <option value="recite" selected>📖 背诵卡（显示全文+拼音）</option>
+                        <option value="dictation">✍️ 默写卡（只留空行）</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="generateCards()">📝 生成卡片</button>
+                <button class="btn btn-print" onclick="printCards()">🖨️ 打印</button>
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="no-content">
+                勾选古诗后点击"生成卡片"
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                基于 <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">Pinyin
+                    Pro</a>
+                &nbsp;|&nbsp;
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的古诗词打印工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        const poems = [
+            { title: '咏鹅', author: '骆宾王（唐）', lines: ['鹅鹅鹅，曲项向天歌。', '白毛浮绿水，红掌拨清波。'] },
+            { title: '静夜思', author: '李白（唐）', lines: ['床前明月光，疑是地上霜。', '举头望明月，低头思故乡。'] },
+            { title: '春晓', author: '孟浩然（唐）', lines: ['春眠不觉晓，处处闻啼鸟。', '夜来风雨声，花落知多少。'] },
+            { title: '登鹳雀楼', author: '王之涣（唐）', lines: ['白日依山尽，黄河入海流。', '欲穷千里目，更上一层楼。'] },
+            { title: '悯农', author: '李绅（唐）', lines: ['锄禾日当午，汗滴禾下土。', '谁知盘中餐，粒粒皆辛苦。'] },
+            { title: '风', author: '李峤（唐）', lines: ['解落三秋叶，能开二月花。', '过江千尺浪，入竹万竿斜。'] },
+            { title: '画', author: '佚名', lines: ['远看山有色，近听水无声。', '春去花还在，人来鸟不惊。'] },
+            { title: '古朗月行（节选）', author: '李白（唐）', lines: ['小时不识月，呼作白玉盘。', '又疑瑶台镜，飞在青云端。'] },
+            { title: '小池', author: '杨万里（宋）', lines: ['泉眼无声惜细流，树阴照水爱晴柔。', '小荷才露尖尖角，早有蜻蜓立上头。'] },
+            { title: '山行', author: '杜牧（唐）', lines: ['远上寒山石径斜，白云生处有人家。', '停车坐爱枫林晚，霜叶红于二月花。'] },
+            { title: '枫桥夜泊', author: '张继（唐）', lines: ['月落乌啼霜满天，江枫渔火对愁眠。', '姑苏城外寒山寺，夜半钟声到客船。'] },
+            { title: '望庐山瀑布', author: '李白（唐）', lines: ['日照香炉生紫烟，遥看瀑布挂前川。', '飞流直下三千尺，疑是银河落九天。'] },
+            { title: '早发白帝城', author: '李白（唐）', lines: ['朝辞白帝彩云间，千里江陵一日还。', '两岸猿声啼不住，轻舟已过万重山。'] },
+            { title: '元日', author: '王安石（宋）', lines: ['爆竹声中一岁除，春风送暖入屠苏。', '千门万户曈曈日，总把新桃换旧符。'] },
+            { title: '乞巧', author: '林杰（唐）', lines: ['七夕今宵看碧霄，牵牛织女渡河桥。', '家家乞巧望秋月，穿尽红丝几万条。'] },
+            { title: '清明', author: '杜牧（唐）', lines: ['清明时节雨纷纷，路上行人欲断魂。', '借问酒家何处有，牧童遥指杏花村。'] },
+            { title: '九月九日忆山东兄弟', author: '王维（唐）', lines: ['独在异乡为异客，每逢佳节倍思亲。', '遥知兄弟登高处，遍插茱萸少一人。'] },
+            { title: '黄鹤楼送孟浩然之广陵', author: '李白（唐）', lines: ['故人西辞黄鹤楼，烟花三月下扬州。', '孤帆远影碧空尽，惟见长江天际流。'] },
+            { title: '池上', author: '白居易（唐）', lines: ['小娃撑小艇，偷采白莲回。', '不解藏踪迹，浮萍一道开。'] },
+            { title: '所见', author: '袁枚（清）', lines: ['牧童骑黄牛，歌声振林樾。', '意欲捕鸣蝉，忽然闭口立。'] },
+            { title: '江雪', author: '柳宗元（唐）', lines: ['千山鸟飞绝，万径人踪灭。', '孤舟蓑笠翁，独钓寒江雪。'] },
+            { title: '梅花', author: '王安石（宋）', lines: ['墙角数枝梅，凌寒独自开。', '遥知不是雪，为有暗香来。'] },
+            { title: '望洞庭', author: '刘禹锡（唐）', lines: ['湖光秋月两相和，潭面无风镜未磨。', '遥望洞庭山水翠，白银盘里一青螺。'] }
+        ];
+
+        function initChecklist() {
+            const wrap = document.getElementById('poemChecklist');
+            wrap.innerHTML = poems.map((poem, i) => `
+                <label>
+                    <input type="checkbox" class="poem-check" value="${i}">
+                    ${poem.title}
+                </label>
+            `).join('');
+        }
+
+        function toggleAll(checked) {
+            document.querySelectorAll('.poem-check').forEach(cb => cb.checked = checked);
+        }
+
+        function pickRandom(count) {
+            toggleAll(false);
+            const indices = poems.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, count);
+            const boxes = document.querySelectorAll('.poem-check');
+            indices.forEach(i => { boxes[i].checked = true; });
+        }
+
+        function getPinyinSafe(text) {
+            try {
+                if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) {
+                    return pinyinPro.pinyin(text, { toneType: 'symbol' });
+                }
+            } catch (e) {
+                console.log('拼音库未加载');
+            }
+            return '';
+        }
+
+        function renderPoemCard(poem, mode) {
+            const card = document.createElement('div');
+            card.className = 'poem-card';
+
+            const header = document.createElement('div');
+            header.className = 'poem-header';
+            header.innerHTML = `<span class="poem-title">${poem.title}</span><span class="poem-author">${poem.author}</span>`;
+            card.appendChild(header);
+
+            const body = document.createElement('div');
+            body.className = 'poem-body';
+
+            if (mode === 'recite') {
+                poem.lines.forEach(line => {
+                    const lineEl = document.createElement('div');
+                    lineEl.className = 'poem-line';
+                    let html = '';
+                    Array.from(line).forEach(ch => {
+                        if (/[\u4e00-\u9fa5]/.test(ch)) {
+                            const py = getPinyinSafe(ch);
+                            html += `<ruby>${ch}<rt>${py}</rt></ruby>`;
+                        } else {
+                            html += `<span class="punct">${ch}</span>`;
+                        }
+                    });
+                    lineEl.innerHTML = html;
+                    body.appendChild(lineEl);
+                });
+            } else {
+                poem.lines.forEach(() => {
+                    const blankLine = document.createElement('div');
+                    blankLine.className = 'poem-blank-line';
+                    body.appendChild(blankLine);
+                });
+            }
+
+            card.appendChild(body);
+            return card;
+        }
+
+        function generateCards() {
+            const selected = Array.from(document.querySelectorAll('.poem-check:checked')).map(cb => poems[parseInt(cb.value)]);
+
+            if (!selected.length) {
+                alert('请先勾选至少一首古诗！');
+                return;
+            }
+
+            const mode = document.getElementById('cardMode').value;
+            const area = document.getElementById('previewArea');
+            const grid = document.createElement('div');
+            grid.className = 'poem-grid';
+
+            selected.forEach(poem => grid.appendChild(renderPoemCard(poem, mode)));
+
+            area.innerHTML = '';
+            area.appendChild(grid);
+        }
+
+        function printCards() {
+            if (!document.querySelector('.poem-grid')) {
+                alert('请先生成卡片再打印！');
+                return;
+            }
+            window.print();
+        }
+
+        initChecklist();
+    </script>
+</body>
+
+</html>

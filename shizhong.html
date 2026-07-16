@@ -226,20 +226,45 @@
             margin-bottom: 16px;
         }
 
-        .quiz-answer-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin: 18px 0;
-            font-size: 15px;
+        .choice-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(110px, 1fr));
+            gap: 12px;
+            max-width: 320px;
+            margin: 18px auto;
         }
 
-        .quiz-answer-row select {
-            padding: 8px 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
+        .choice-btn {
+            padding: 14px 8px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            background: white;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .choice-btn:hover:not(:disabled) {
+            border-color: #ff8a65;
+            transform: translateY(-2px);
+        }
+
+        .choice-btn:disabled {
+            cursor: default;
+        }
+
+        .choice-btn.correct {
+            background: #e8f8ee;
+            border-color: #43a047;
+            color: #2e7d32;
+        }
+
+        .choice-btn.wrong {
+            background: #ffebee;
+            border-color: #e53935;
+            color: #c62828;
         }
 
         .quiz-feedback {
@@ -428,16 +453,10 @@
             <div id="quizActive" style="display: none;">
                 <div class="quiz-progress" id="quizProgress">第 1 / 10 题</div>
                 <div id="quizClockWrap"></div>
-                <div class="quiz-answer-row">
-                    <span>现在是</span>
-                    <select id="answerHour"></select>
-                    <span>时</span>
-                    <select id="answerMinute"></select>
-                    <span>分</span>
-                </div>
+                <p style="color: #888; font-size: 13px; margin-top: 6px;">现在是几时几分？请选择正确答案</p>
+                <div class="choice-grid" id="choiceGrid"></div>
                 <div class="quiz-feedback" id="quizFeedback"></div>
                 <div class="button-group" style="justify-content: center;">
-                    <button class="btn btn-primary" id="submitAnswerBtn" onclick="submitClockAnswer()">✅ 提交答案</button>
                     <button class="btn btn-secondary" id="nextQuestionBtn" style="display: none;"
                         onclick="nextClockQuestion()">⏭ 下一题</button>
                 </div>
@@ -469,7 +488,6 @@
         let quizCorrect = 0;
         let curHour = 0;
         let curMinute = 0;
-        let selectsPopulated = false;
 
         function switchModeTab(mode) {
             const isQuiz = mode === 'quiz';
@@ -535,36 +553,6 @@
             minuteHandEl.style.transform = `rotate(${minuteDeg}deg)`;
         }
 
-        function populateAnswerSelects() {
-            if (selectsPopulated) return;
-            const hourSel = document.getElementById('answerHour');
-            const minSel = document.getElementById('answerMinute');
-
-            const hourPlaceholder = document.createElement('option');
-            hourPlaceholder.value = '';
-            hourPlaceholder.textContent = '请选择';
-            hourSel.appendChild(hourPlaceholder);
-            for (let h = 1; h <= 12; h++) {
-                const opt = document.createElement('option');
-                opt.value = h;
-                opt.textContent = h;
-                hourSel.appendChild(opt);
-            }
-
-            const minPlaceholder = document.createElement('option');
-            minPlaceholder.value = '';
-            minPlaceholder.textContent = '请选择';
-            minSel.appendChild(minPlaceholder);
-            for (let m = 0; m < 60; m++) {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = String(m).padStart(2, '0');
-                minSel.appendChild(opt);
-            }
-
-            selectsPopulated = true;
-        }
-
         function randomTimeByPrecision(precision) {
             const hour = Math.floor(Math.random() * 12);
             let minute;
@@ -584,8 +572,97 @@
             el.className = 'quiz-feedback' + (kind ? ' ' + kind : '');
         }
 
+        function formatTimeLabel(hour, minute) {
+            const displayHour = hour === 0 ? 12 : hour;
+            return `${displayHour}:${String(minute).padStart(2, '0')}`;
+        }
+
+        // 生成 4 个选项（1 个正确答案 + 3 个常见易混淆错误答案），并打乱顺序
+        function buildChoices(hour, minute, precision) {
+            const correctKey = `${hour % 12}:${minute}`;
+            const candidateKeys = new Set([correctKey]);
+
+            const tryAdd = (h, m) => {
+                h = ((h % 12) + 12) % 12;
+                m = ((m % 60) + 60) % 60;
+                candidateKeys.add(`${h}:${m}`);
+            };
+
+            const minuteSteps = precision === 'hour' ? [30, -30, 15]
+                : precision === '5min' ? [5, -5, 10, -10, 15]
+                    : [1, -1, 5, -5, 10, -10, 15];
+
+            const attempts = [
+                () => tryAdd(hour + 1, minute),
+                () => tryAdd(hour - 1, minute),
+                () => tryAdd(hour, minute + minuteSteps[Math.floor(Math.random() * minuteSteps.length)]),
+                () => tryAdd(hour, minute + minuteSteps[Math.floor(Math.random() * minuteSteps.length)]),
+                () => tryAdd(hour + 1, minute + minuteSteps[Math.floor(Math.random() * minuteSteps.length)]),
+                () => tryAdd(hour - 1, minute + minuteSteps[Math.floor(Math.random() * minuteSteps.length)])
+            ].sort(() => Math.random() - 0.5);
+
+            for (const attempt of attempts) {
+                if (candidateKeys.size >= 4) break;
+                attempt();
+            }
+
+            let guard = 0;
+            while (candidateKeys.size < 4 && guard < 50) {
+                guard++;
+                const randHour = Math.floor(Math.random() * 12);
+                const randMinute = precision === 'hour' ? 0
+                    : precision === '5min' ? Math.floor(Math.random() * 12) * 5
+                        : Math.floor(Math.random() * 60);
+                tryAdd(randHour, randMinute);
+            }
+
+            const options = Array.from(candidateKeys).slice(0, 4).map(key => {
+                const [h, m] = key.split(':').map(Number);
+                return { label: formatTimeLabel(h, m), correct: key === correctKey };
+            });
+
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        function renderChoices() {
+            const precision = document.getElementById('precisionSelect').value;
+            const options = buildChoices(curHour, curMinute, precision);
+
+            const grid = document.getElementById('choiceGrid');
+            grid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = opt.label;
+                btn.onclick = () => selectChoice(btn, opt);
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('nextQuestionBtn').style.display = 'none';
+        }
+
+        function selectChoice(btn, opt) {
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(b => { b.disabled = true; });
+
+            const correctLabel = formatTimeLabel(curHour, curMinute);
+
+            if (opt.correct) {
+                quizCorrect++;
+                btn.classList.add('correct');
+                setQuizFeedback('✅ 答对了！', 'correct');
+            } else {
+                btn.classList.add('wrong');
+                setQuizFeedback(`❌ 不对哦，正确答案是 ${correctLabel}`, 'mistake');
+                buttons.forEach(b => {
+                    if (b.textContent === correctLabel) b.classList.add('correct');
+                });
+            }
+
+            document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+        }
+
         function startClockQuiz() {
-            populateAnswerSelects();
             quizTotal = parseInt(document.getElementById('quizCount').value) || 10;
             quizIndex = 0;
             quizCorrect = 0;
@@ -613,35 +690,8 @@
             const { face } = createClockFace(curHour, curMinute, 220);
             wrap.appendChild(face);
 
-            document.getElementById('answerHour').value = '';
-            document.getElementById('answerMinute').value = '';
             setQuizFeedback('');
-            document.getElementById('submitAnswerBtn').style.display = 'inline-block';
-            document.getElementById('nextQuestionBtn').style.display = 'none';
-        }
-
-        function submitClockAnswer() {
-            const ah = parseInt(document.getElementById('answerHour').value, 10);
-            const am = parseInt(document.getElementById('answerMinute').value, 10);
-
-            if (isNaN(ah) || isNaN(am)) {
-                alert('请选择完整的时间！');
-                return;
-            }
-
-            const displayHour = curHour === 0 ? 12 : curHour;
-            const hourOk = ah % 12 === curHour % 12;
-            const correct = hourOk && am === curMinute;
-
-            if (correct) {
-                quizCorrect++;
-                setQuizFeedback('✅ 答对了！', 'correct');
-            } else {
-                setQuizFeedback(`❌ 不对哦，正确答案是 ${displayHour} 时 ${String(curMinute).padStart(2, '0')} 分`, 'mistake');
-            }
-
-            document.getElementById('submitAnswerBtn').style.display = 'none';
-            document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+            renderChoices();
         }
 
         function finishClockQuiz() {
