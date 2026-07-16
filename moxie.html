@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>看拼音写汉字 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <script src="pinyin-pro.min.js"></script>
+    <script src="ziku-data.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .source-tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 2px solid #dfe3ea;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-tab.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .source-panel {
+            display: none;
+        }
+
+        .source-panel.active {
+            display: block;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select,
+        .option-item input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .option-item input[type="number"] {
+            width: 70px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #444;
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .source-summary {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            min-height: 18px;
+        }
+
+        /* ===== 练习纸预览 ===== */
+        .preview-area {
+            padding: 30px;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .no-content::before {
+            content: "🔤";
+            display: block;
+            font-size: 4em;
+            margin-bottom: 16px;
+        }
+
+        .moxie-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px 28px;
+        }
+
+        .moxie-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .moxie-pinyin {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding-left: 2px;
+        }
+
+        .moxie-boxes {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* 田字格样式（与其它工具一致） */
+        .grid-container {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border: 1px solid #4CAF50;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .grid-container .grid-line-h,
+        .grid-container .grid-line-v {
+            position: absolute;
+            background: none;
+        }
+
+        .grid-container .grid-line-h {
+            width: 100%;
+            height: 0;
+            top: 50%;
+            left: 0;
+            border-top: 1px dashed #4CAF50;
+        }
+
+        .grid-container .grid-line-v {
+            width: 0;
+            height: 100%;
+            top: 0;
+            left: 50%;
+            border-left: 1px dashed #4CAF50;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 10mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .control-panel {
+                display: none;
+            }
+
+            .preview-area {
+                padding: 0;
+            }
+
+            .no-content {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+
+            .preview-area {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🔤 看拼音写汉字</h1>
+            <p>根据拼音提示，写出正确的汉字，与听写、注音互为练习</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>选择要练习的生字或词语，每个字/词上方会标注拼音，下方留出多个方格供反复默写。适合和"生字听写""文章注音"配合使用。
+            </div>
+
+            <div class="source-tabs">
+                <button class="source-tab active" id="tabGrade" onclick="switchSourceTab('grade')">📚 按年级抽取</button>
+                <button class="source-tab" id="tabCustom" onclick="switchSourceTab('custom')">✏️ 自定义内容</button>
+            </div>
+
+            <div class="source-panel active" id="panelGrade">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>选择年级：</label>
+                        <select id="gradeSelect">
+                            <option value="all">全部年级</option>
+                            <option value="1-1" selected>一年级上册</option>
+                            <option value="1-2">一年级下册</option>
+                            <option value="2-1">二年级上册</option>
+                            <option value="2-2">二年级下册</option>
+                            <option value="3-1">三年级上册</option>
+                            <option value="3-2">三年级下册</option>
+                            <option value="4-1">四年级上册</option>
+                            <option value="4-2">四年级下册</option>
+                            <option value="5-1">五年级上册</option>
+                            <option value="5-2">五年级下册</option>
+                            <option value="6-1">六年级上册</option>
+                            <option value="6-2">六年级下册</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>随机数量：</label>
+                        <input type="number" id="randomCount" value="12" min="1" max="50">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="pickFromGrade()">🎲 随机抽取</button>
+                </div>
+            </div>
+
+            <div class="source-panel" id="panelCustom">
+                <textarea id="customInput" placeholder="输入要练习的字或词语，用空格、逗号或换行分隔，例如：&#10;太阳 月亮 星星"></textarea>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="useCustomList()">✅ 使用自定义内容</button>
+                </div>
+            </div>
+
+            <div class="source-summary" id="sourceSummary"></div>
+
+            <hr style="border: none; border-top: 1px solid #e9ecef; margin: 16px 0;">
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>每个练习次数：</label>
+                    <select id="repeatSelect">
+                        <option value="2">2 次</option>
+                        <option value="3" selected>3 次</option>
+                        <option value="4">4 次</option>
+                        <option value="6">6 次</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <label>拼音声调：</label>
+                    <select id="toneSelect">
+                        <option value="symbol" selected>标声调（ā á ǎ à）</option>
+                        <option value="none">不标声调</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="generateSheet()">📝 生成练习纸</button>
+                <button class="btn btn-print" onclick="printSheet()">🖨️ 打印</button>
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="no-content">
+                请选择听写内容后点击"生成练习纸"
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                基于 <a href="https://github.com/zh-lx/pinyin-pro" target="_blank" rel="noopener noreferrer">Pinyin
+                    Pro</a>
+                &nbsp;|&nbsp;
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的看拼音写汉字练习工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let itemList = [];
+
+        function switchSourceTab(tab) {
+            const isGrade = tab === 'grade';
+            document.getElementById('tabGrade').classList.toggle('active', isGrade);
+            document.getElementById('tabCustom').classList.toggle('active', !isGrade);
+            document.getElementById('panelGrade').classList.toggle('active', isGrade);
+            document.getElementById('panelCustom').classList.toggle('active', !isGrade);
+        }
+
+        function pickFromGrade() {
+            const grade = document.getElementById('gradeSelect').value;
+            const count = parseInt(document.getElementById('randomCount').value) || 12;
+            const pool = grade === 'all' ? allChars : (gradeChars[grade] || allChars);
+
+            if (!pool.length) {
+                alert('所选年级字库为空！');
+                return;
+            }
+
+            const actual = Math.min(count, pool.length);
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            itemList = shuffled.slice(0, actual);
+            onListReady();
+        }
+
+        function useCustomList() {
+            const raw = document.getElementById('customInput').value.trim();
+            if (!raw) {
+                alert('请输入要练习的内容！');
+                return;
+            }
+
+            const list = raw.split(/[\s,，、\n]+/).map(s => s.trim()).filter(Boolean);
+            if (!list.length) {
+                alert('未识别到有效内容！');
+                return;
+            }
+
+            itemList = list;
+            onListReady();
+        }
+
+        function onListReady() {
+            document.getElementById('sourceSummary').textContent =
+                `✅ 已准备 ${itemList.length} 个内容，点击下方"生成练习纸"`;
+        }
+
+        function getPinyinSafe(text, toneType) {
+            try {
+                if (typeof pinyinPro !== 'undefined' && pinyinPro.pinyin) {
+                    return pinyinPro.pinyin(text, { toneType: toneType, separator: ' ' });
+                }
+            } catch (e) {
+                console.log('拼音库未加载');
+            }
+            return '';
+        }
+
+        function generateSheet() {
+            if (!itemList.length) {
+                alert('请先选择要练习的字或词语！');
+                return;
+            }
+
+            const repeatCount = parseInt(document.getElementById('repeatSelect').value) || 3;
+            const toneType = document.getElementById('toneSelect').value;
+            const area = document.getElementById('previewArea');
+
+            const grid = document.createElement('div');
+            grid.className = 'moxie-grid';
+
+            itemList.forEach(item => {
+                const py = getPinyinSafe(item, toneType);
+                const chars = Array.from(item);
+
+                for (let r = 0; r < repeatCount; r++) {
+                    const block = document.createElement('div');
+                    block.className = 'moxie-item';
+
+                    const pinyinLabel = document.createElement('div');
+                    pinyinLabel.className = 'moxie-pinyin';
+                    pinyinLabel.textContent = py || item;
+                    block.appendChild(pinyinLabel);
+
+                    const boxes = document.createElement('div');
+                    boxes.className = 'moxie-boxes';
+                    chars.forEach(() => {
+                        const box = document.createElement('div');
+                        box.className = 'grid-container';
+                        box.innerHTML = '<div class="grid-line-h"></div><div class="grid-line-v"></div>';
+                        boxes.appendChild(box);
+                    });
+                    block.appendChild(boxes);
+
+                    grid.appendChild(block);
+                }
+            });
+
+            area.innerHTML = '';
+            area.appendChild(grid);
+        }
+
+        function printSheet() {
+            if (!document.querySelector('.moxie-grid')) {
+                alert('请先生成练习纸再打印！');
+                return;
+            }
+            window.print();
+        }
+    </script>
+</body>
+
+</html>

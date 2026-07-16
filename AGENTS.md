@@ -6,13 +6,16 @@ This repo is a static, browser-only Chinese writing/learning practice site for e
 - `zice.html`: interactive handwriting self-quiz using Hanzi Writer's `quiz()` API (draw-and-check, not just animation).
 - `chaozi.html`: compact copy mode for articles.
 - `pinyin.html`: article pinyin annotation.
+- `moxie.html`: "read the pinyin, write the character" printable dictation sheet (complements `pinyin.html`'s character-to-pinyin direction).
 - `tingxie.html`: spoken dictation practice (speech synthesis + printable answer sheet).
 - `mingtie.html`: name sticker/label generator.
 - `kousuan.html`: mental-math drills (numpad / handwriting recognition via `tf.min.js` + MNIST model in `mnist-model/` / voice input).
+- `yunsuanbiao.html`: multiplication/addition/subtraction reference tables, optionally with randomly blanked cells for fill-in practice, printable.
+- `shizhong.html`: analog-clock time-reading practice (interactive quiz + printable worksheet); clock faces are pure CSS/JS (rotated divs), no canvas/SVG/library dependency.
 
 Shared files, used across multiple pages (a deliberate exception to "inline everything", see below):
 - `common.css`: shared header/back-link/footer styles for every tool page (not used by `index.html`, which has its own standalone hero + card styles).
-- `ziku-data.js`: shared `gradeChars`/`allChars` character-bank data, used by `bihua.html`, `tingxie.html`, and `zice.html`.
+- `ziku-data.js`: shared `gradeChars`/`allChars` character-bank data, used by `bihua.html`, `tingxie.html`, `zice.html`, and `moxie.html`.
 - `hanzi-writer.min.js`, `pinyin-pro.min.js`, `tf.min.js`, `ziku.txt` (character data reference).
 
 Every tool page's header only shows a single "← 返回首页" link back to `index.html`; there is no longer a multi-page nav bar. Deployment notes are in `DEPLOYMENT.md`.

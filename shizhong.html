@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时钟认读练习 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%) !important;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .source-tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 2px solid #dfe3ea;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-tab.active {
+            border-color: #ff8a65;
+            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
+            color: white;
+        }
+
+        .source-panel {
+            display: none;
+        }
+
+        .source-panel.active {
+            display: block;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #ff8a65;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff8a65 0%, #ffab91 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #444;
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== 时钟组件 ===== */
+        .clock-face {
+            position: relative;
+            border: 6px solid #333;
+            border-radius: 50%;
+            background: #fff;
+            margin: 0 auto;
+        }
+
+        .clock-numbers {
+            position: absolute;
+            inset: 0;
+        }
+
+        .clock-number {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #333;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            border-radius: 4px;
+            transform-origin: 50% 100%;
+        }
+
+        .hour-hand {
+            width: 6px;
+            margin-left: -3px;
+            background: #333;
+            z-index: 3;
+        }
+
+        .minute-hand {
+            width: 4px;
+            margin-left: -2px;
+            background: #ff8a65;
+            z-index: 4;
+        }
+
+        .clock-center {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        /* ===== 互动测验区 ===== */
+        .quiz-stage {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .stage-empty {
+            color: #999;
+            padding: 30px 0;
+        }
+
+        .stage-empty::before {
+            content: "🕐";
+            display: block;
+            font-size: 3.5em;
+            margin-bottom: 10px;
+        }
+
+        .quiz-progress {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .quiz-answer-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 18px 0;
+            font-size: 15px;
+        }
+
+        .quiz-answer-row select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .quiz-feedback {
+            font-size: 1.05em;
+            color: #444;
+            min-height: 28px;
+            margin-bottom: 10px;
+        }
+
+        .quiz-feedback.correct {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        .quiz-feedback.mistake {
+            color: #e53935;
+            font-weight: bold;
+        }
+
+        /* ===== 结果区 ===== */
+        .result-panel {
+            display: none;
+            padding: 0 30px 30px;
+            text-align: center;
+        }
+
+        .result-panel.active {
+            display: block;
+        }
+
+        .result-summary {
+            background: #fff3ec;
+            border: 1px solid #ffd6bd;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 16px;
+            color: #b35300;
+            margin-bottom: 16px;
+        }
+
+        /* ===== 打印练习卷 ===== */
+        .print-preview {
+            display: none;
+            padding: 0 30px 30px;
+        }
+
+        .print-preview.active {
+            display: block;
+        }
+
+        .sheet-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .sheet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 22px 16px;
+        }
+
+        .sheet-cell {
+            text-align: center;
+        }
+
+        .sheet-answer-line {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 10mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .control-panel,
+            .quiz-stage,
+            .result-panel {
+                display: none;
+            }
+
+            .print-preview {
+                display: block;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🕐 时钟认读练习</h1>
+            <p>看时钟说时间，边玩边学会认读钟表</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>"互动练习"在网页上直接答题，随机出题、即时判断对错；"打印练习卷"会生成一整页时钟题，适合打印出来当堂练习。
+            </div>
+
+            <div class="source-tabs">
+                <button class="source-tab active" id="tabQuiz" onclick="switchModeTab('quiz')">🎮 互动练习</button>
+                <button class="source-tab" id="tabPrint" onclick="switchModeTab('print')">🖨️ 打印练习卷</button>
+            </div>
+
+            <div class="source-panel active" id="panelQuiz">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>时间精度：</label>
+                        <select id="precisionSelect">
+                            <option value="hour">整时（3:00）</option>
+                            <option value="5min" selected>5 分钟（3:05, 3:10...）</option>
+                            <option value="1min">任意分钟（较难）</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>题目数量：</label>
+                        <select id="quizCount">
+                            <option value="5">5 题</option>
+                            <option value="10" selected>10 题</option>
+                            <option value="20">20 题</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startClockQuiz()">▶️ 开始练习</button>
+                </div>
+            </div>
+
+            <div class="source-panel" id="panelPrint">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>时间精度：</label>
+                        <select id="sheetPrecision">
+                            <option value="hour">整时（3:00）</option>
+                            <option value="5min" selected>5 分钟（3:05, 3:10...）</option>
+                            <option value="1min">任意分钟（较难）</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>题目数量：</label>
+                        <select id="sheetCount">
+                            <option value="6">6 个</option>
+                            <option value="8" selected>8 个</option>
+                            <option value="12">12 个</option>
+                            <option value="16">16 个</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="generateClockSheet()">📝 生成练习卷</button>
+                    <button class="btn btn-print" onclick="printClockSheet()">🖨️ 打印</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-stage" id="quizStage">
+            <div class="stage-empty" id="stageEmpty">
+                设置好精度和题量后，点击"开始练习"
+            </div>
+            <div id="quizActive" style="display: none;">
+                <div class="quiz-progress" id="quizProgress">第 1 / 10 题</div>
+                <div id="quizClockWrap"></div>
+                <div class="quiz-answer-row">
+                    <span>现在是</span>
+                    <select id="answerHour"></select>
+                    <span>时</span>
+                    <select id="answerMinute"></select>
+                    <span>分</span>
+                </div>
+                <div class="quiz-feedback" id="quizFeedback"></div>
+                <div class="button-group" style="justify-content: center;">
+                    <button class="btn btn-primary" id="submitAnswerBtn" onclick="submitClockAnswer()">✅ 提交答案</button>
+                    <button class="btn btn-secondary" id="nextQuestionBtn" style="display: none;"
+                        onclick="nextClockQuestion()">⏭ 下一题</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+            <h3 style="margin-bottom: 12px; color: #333;">🎉 练习完成！</h3>
+            <div class="result-summary" id="resultSummary"></div>
+            <div class="button-group" style="justify-content: center;">
+                <button class="btn btn-primary" onclick="startClockQuiz()">🔄 再来一组</button>
+            </div>
+        </div>
+
+        <div class="print-preview" id="printPreview"></div>
+
+        <footer class="footer">
+            <p>
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的时钟认读练习工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let quizTotal = 10;
+        let quizIndex = 0;
+        let quizCorrect = 0;
+        let curHour = 0;
+        let curMinute = 0;
+        let selectsPopulated = false;
+
+        function switchModeTab(mode) {
+            const isQuiz = mode === 'quiz';
+            document.getElementById('tabQuiz').classList.toggle('active', isQuiz);
+            document.getElementById('tabPrint').classList.toggle('active', !isQuiz);
+            document.getElementById('panelQuiz').classList.toggle('active', isQuiz);
+            document.getElementById('panelPrint').classList.toggle('active', !isQuiz);
+
+            document.getElementById('quizStage').style.display = isQuiz ? 'block' : 'none';
+            document.getElementById('resultPanel').classList.remove('active');
+            document.getElementById('printPreview').classList.toggle('active', false);
+        }
+
+        function createClockFace(hour, minute, size) {
+            size = size || 220;
+            const face = document.createElement('div');
+            face.className = 'clock-face';
+            face.style.width = size + 'px';
+            face.style.height = size + 'px';
+
+            const numbersLayer = document.createElement('div');
+            numbersLayer.className = 'clock-numbers';
+            const radius = size * 0.38;
+            const center = size / 2;
+
+            for (let i = 1; i <= 12; i++) {
+                const angle = (i * 30 - 90) * Math.PI / 180;
+                const x = center + radius * Math.cos(angle);
+                const y = center + radius * Math.sin(angle);
+                const num = document.createElement('span');
+                num.className = 'clock-number';
+                num.style.left = x + 'px';
+                num.style.top = y + 'px';
+                num.style.fontSize = Math.round(size * 0.09) + 'px';
+                num.textContent = i;
+                numbersLayer.appendChild(num);
+            }
+            face.appendChild(numbersLayer);
+
+            const hourHand = document.createElement('div');
+            hourHand.className = 'hand hour-hand';
+            hourHand.style.height = Math.round(size * 0.26) + 'px';
+            face.appendChild(hourHand);
+
+            const minuteHand = document.createElement('div');
+            minuteHand.className = 'hand minute-hand';
+            minuteHand.style.height = Math.round(size * 0.38) + 'px';
+            face.appendChild(minuteHand);
+
+            const centerDot = document.createElement('div');
+            centerDot.className = 'clock-center';
+            face.appendChild(centerDot);
+
+            setClockHands(hourHand, minuteHand, hour, minute);
+
+            return { face, hourHand, minuteHand };
+        }
+
+        function setClockHands(hourHandEl, minuteHandEl, hour, minute) {
+            const hourDeg = (hour % 12) * 30 + minute * 0.5;
+            const minuteDeg = minute * 6;
+            hourHandEl.style.transform = `rotate(${hourDeg}deg)`;
+            minuteHandEl.style.transform = `rotate(${minuteDeg}deg)`;
+        }
+
+        function populateAnswerSelects() {
+            if (selectsPopulated) return;
+            const hourSel = document.getElementById('answerHour');
+            const minSel = document.getElementById('answerMinute');
+
+            const hourPlaceholder = document.createElement('option');
+            hourPlaceholder.value = '';
+            hourPlaceholder.textContent = '请选择';
+            hourSel.appendChild(hourPlaceholder);
+            for (let h = 1; h <= 12; h++) {
+                const opt = document.createElement('option');
+                opt.value = h;
+                opt.textContent = h;
+                hourSel.appendChild(opt);
+            }
+
+            const minPlaceholder = document.createElement('option');
+            minPlaceholder.value = '';
+            minPlaceholder.textContent = '请选择';
+            minSel.appendChild(minPlaceholder);
+            for (let m = 0; m < 60; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = String(m).padStart(2, '0');
+                minSel.appendChild(opt);
+            }
+
+            selectsPopulated = true;
+        }
+
+        function randomTimeByPrecision(precision) {
+            const hour = Math.floor(Math.random() * 12);
+            let minute;
+            if (precision === 'hour') {
+                minute = 0;
+            } else if (precision === '5min') {
+                minute = Math.floor(Math.random() * 12) * 5;
+            } else {
+                minute = Math.floor(Math.random() * 60);
+            }
+            return { hour, minute };
+        }
+
+        function setQuizFeedback(text, kind) {
+            const el = document.getElementById('quizFeedback');
+            el.textContent = text;
+            el.className = 'quiz-feedback' + (kind ? ' ' + kind : '');
+        }
+
+        function startClockQuiz() {
+            populateAnswerSelects();
+            quizTotal = parseInt(document.getElementById('quizCount').value) || 10;
+            quizIndex = 0;
+            quizCorrect = 0;
+            document.getElementById('stageEmpty').style.display = 'none';
+            document.getElementById('quizActive').style.display = 'block';
+            document.getElementById('resultPanel').classList.remove('active');
+            nextClockQuestion();
+        }
+
+        function nextClockQuestion() {
+            if (quizIndex >= quizTotal) {
+                finishClockQuiz();
+                return;
+            }
+            quizIndex++;
+            document.getElementById('quizProgress').textContent = `第 ${quizIndex} / ${quizTotal} 题`;
+
+            const precision = document.getElementById('precisionSelect').value;
+            const time = randomTimeByPrecision(precision);
+            curHour = time.hour;
+            curMinute = time.minute;
+
+            const wrap = document.getElementById('quizClockWrap');
+            wrap.innerHTML = '';
+            const { face } = createClockFace(curHour, curMinute, 220);
+            wrap.appendChild(face);
+
+            document.getElementById('answerHour').value = '';
+            document.getElementById('answerMinute').value = '';
+            setQuizFeedback('');
+            document.getElementById('submitAnswerBtn').style.display = 'inline-block';
+            document.getElementById('nextQuestionBtn').style.display = 'none';
+        }
+
+        function submitClockAnswer() {
+            const ah = parseInt(document.getElementById('answerHour').value, 10);
+            const am = parseInt(document.getElementById('answerMinute').value, 10);
+
+            if (isNaN(ah) || isNaN(am)) {
+                alert('请选择完整的时间！');
+                return;
+            }
+
+            const displayHour = curHour === 0 ? 12 : curHour;
+            const hourOk = ah % 12 === curHour % 12;
+            const correct = hourOk && am === curMinute;
+
+            if (correct) {
+                quizCorrect++;
+                setQuizFeedback('✅ 答对了！', 'correct');
+            } else {
+                setQuizFeedback(`❌ 不对哦，正确答案是 ${displayHour} 时 ${String(curMinute).padStart(2, '0')} 分`, 'mistake');
+            }
+
+            document.getElementById('submitAnswerBtn').style.display = 'none';
+            document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+        }
+
+        function finishClockQuiz() {
+            document.getElementById('quizActive').style.display = 'none';
+            document.getElementById('resultPanel').classList.add('active');
+            const rate = quizTotal ? Math.round((quizCorrect / quizTotal) * 100) : 0;
+            document.getElementById('resultSummary').textContent =
+                `共 ${quizTotal} 题，答对 ${quizCorrect} 题，正确率 ${rate}%`;
+        }
+
+        function generateClockSheet() {
+            const count = parseInt(document.getElementById('sheetCount').value) || 8;
+            const precision = document.getElementById('sheetPrecision').value;
+            const area = document.getElementById('printPreview');
+            area.innerHTML = '';
+
+            const title = document.createElement('div');
+            title.className = 'sheet-title';
+            title.textContent = '🕐 时钟认读练习卷 —— 写出下面每个时钟显示的时间';
+            area.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'sheet-grid';
+
+            for (let i = 0; i < count; i++) {
+                const time = randomTimeByPrecision(precision);
+                const cell = document.createElement('div');
+                cell.className = 'sheet-cell';
+
+                const { face } = createClockFace(time.hour, time.minute, 140);
+                cell.appendChild(face);
+
+                const line = document.createElement('div');
+                line.className = 'sheet-answer-line';
+                line.textContent = '现在是 ______ 时 ______ 分';
+                cell.appendChild(line);
+
+                grid.appendChild(cell);
+            }
+
+            area.appendChild(grid);
+            area.classList.add('active');
+        }
+
+        function printClockSheet() {
+            if (!document.querySelector('.sheet-grid')) {
+                alert('请先生成练习卷再打印！');
+                return;
+            }
+            window.print();
+        }
+    </script>
+</body>
+
+</html>

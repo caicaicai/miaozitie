@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运算表打印 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 50%, #2bff88 100%) !important;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .source-tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 2px solid #dfe3ea;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-tab.active {
+            border-color: #2bd2ff;
+            background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 100%);
+            color: white;
+        }
+
+        .source-panel {
+            display: none;
+        }
+
+        .source-panel.active {
+            display: block;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #2bd2ff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 100%);
+            color: white;
+        }
+
+        .btn-print {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== 预览区 ===== */
+        .preview-area {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.1em;
+        }
+
+        .no-content::before {
+            content: "🧮";
+            display: block;
+            font-size: 4em;
+            margin-bottom: 16px;
+        }
+
+        .sheet-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* 乘法表：三角式列表 */
+        .mul-table {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-family: 'Consolas', 'Microsoft YaHei', monospace;
+        }
+
+        .mul-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+
+        .mul-cell {
+            font-size: 15px;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .blank-line {
+            display: inline-block;
+            min-width: 28px;
+            border-bottom: 2px solid #999;
+            height: 1em;
+            vertical-align: middle;
+        }
+
+        /* 加减法表：方格表 */
+        .op-table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+
+        .op-table td {
+            width: 34px;
+            height: 30px;
+            text-align: center;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            color: #333;
+        }
+
+        .op-header {
+            background: #eef3ff;
+            font-weight: bold;
+            color: #444;
+        }
+
+        .op-corner {
+            background: #dfe6f5;
+            font-weight: bold;
+        }
+
+        .op-empty {
+            background: #fafafa;
+        }
+
+        .blank-cell {
+            display: inline-block;
+            width: 16px;
+            border-bottom: 2px solid #999;
+            height: 1em;
+        }
+
+        /* ===== 打印样式 ===== */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 10mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .control-panel {
+                display: none;
+            }
+
+            .no-content {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+
+            .mul-row {
+                gap: 8px;
+            }
+
+            .mul-cell {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🧮 运算表打印</h1>
+            <p>乘法表 / 加法表 / 减法表，可选完整表或填空练习</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>选择运算类型和范围，可生成完整表用于查阅记忆，也可开启"填空练习模式"随机挖空部分格子，打印出来当堂练习。
+            </div>
+
+            <div class="source-tabs">
+                <button class="source-tab active" id="tabMul" onclick="switchOpTab('mul')">✖️ 乘法表</button>
+                <button class="source-tab" id="tabAdd" onclick="switchOpTab('add')">➕ 加法表</button>
+                <button class="source-tab" id="tabSub" onclick="switchOpTab('sub')">➖ 减法表</button>
+            </div>
+
+            <div class="source-panel active" id="panelMul">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>范围：</label>
+                        <select id="mulMax">
+                            <option value="6">1 ~ 6</option>
+                            <option value="9" selected>1 ~ 9（经典九九表）</option>
+                            <option value="10">1 ~ 10</option>
+                            <option value="12">1 ~ 12</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="source-panel" id="panelAdd">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>范围：</label>
+                        <select id="addMax">
+                            <option value="5">5 以内</option>
+                            <option value="10" selected>10 以内</option>
+                            <option value="20">20 以内</option>
+                            <option value="50">50 以内</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="source-panel" id="panelSub">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>范围：</label>
+                        <select id="subMax">
+                            <option value="10" selected>10 以内</option>
+                            <option value="20">20 以内</option>
+                            <option value="50">50 以内</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e9ecef; margin: 12px 0;">
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox" id="blankMode" onchange="toggleBlankRatio()">
+                        填空练习模式（随机挖空部分格子）
+                    </label>
+                </div>
+                <div class="option-item" id="blankRatioWrap" style="display: none;">
+                    <label>挖空比例：</label>
+                    <select id="blankRatio">
+                        <option value="0.3">约 30%</option>
+                        <option value="0.5" selected>约 50%</option>
+                        <option value="0.7">约 70%</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="generateTable()">📝 生成运算表</button>
+                <button class="btn btn-print" onclick="printTable()">🖨️ 打印</button>
+            </div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="no-content">
+                选择运算类型和范围后，点击"生成运算表"
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的运算表打印工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let currentOp = 'mul';
+
+        function switchOpTab(op) {
+            currentOp = op;
+            document.getElementById('tabMul').classList.toggle('active', op === 'mul');
+            document.getElementById('tabAdd').classList.toggle('active', op === 'add');
+            document.getElementById('tabSub').classList.toggle('active', op === 'sub');
+            document.getElementById('panelMul').classList.toggle('active', op === 'mul');
+            document.getElementById('panelAdd').classList.toggle('active', op === 'add');
+            document.getElementById('panelSub').classList.toggle('active', op === 'sub');
+        }
+
+        function toggleBlankRatio() {
+            const checked = document.getElementById('blankMode').checked;
+            document.getElementById('blankRatioWrap').style.display = checked ? 'flex' : 'none';
+        }
+
+        function getBlankRatio() {
+            return document.getElementById('blankMode').checked
+                ? parseFloat(document.getElementById('blankRatio').value)
+                : 0;
+        }
+
+        function renderMultiplicationTable(maxNum, blankRatio) {
+            const wrap = document.createElement('div');
+            wrap.className = 'mul-table';
+
+            for (let i = 1; i <= maxNum; i++) {
+                const row = document.createElement('div');
+                row.className = 'mul-row';
+
+                for (let j = 1; j <= i; j++) {
+                    const cell = document.createElement('span');
+                    cell.className = 'mul-cell';
+                    const result = i * j;
+                    const isBlank = blankRatio > 0 && Math.random() < blankRatio;
+                    cell.innerHTML = isBlank
+                        ? `${j}×${i}=<span class="blank-line"></span>`
+                        : `${j}×${i}=${result}`;
+                    row.appendChild(cell);
+                }
+
+                wrap.appendChild(row);
+            }
+
+            return wrap;
+        }
+
+        function makeCell(content, cls, empty) {
+            const td = document.createElement('td');
+            if (cls) td.className = cls + (empty ? ' op-empty' : '');
+            if (content !== undefined && content !== null) td.innerHTML = content;
+            return td;
+        }
+
+        function renderGridTable(maxNum, op, blankRatio) {
+            const table = document.createElement('table');
+            table.className = 'op-table';
+
+            const headerRow = document.createElement('tr');
+            headerRow.appendChild(makeCell(op === '+' ? '+' : '－', 'op-corner'));
+            for (let c = 0; c <= maxNum; c++) headerRow.appendChild(makeCell(c, 'op-header'));
+            table.appendChild(headerRow);
+
+            for (let r = 0; r <= maxNum; r++) {
+                const tr = document.createElement('tr');
+                tr.appendChild(makeCell(r, 'op-header'));
+
+                for (let c = 0; c <= maxNum; c++) {
+                    const valid = op === '+' ? (r + c <= maxNum) : (r >= c);
+                    let content = '';
+                    if (valid) {
+                        const result = op === '+' ? r + c : r - c;
+                        const isBlank = blankRatio > 0 && Math.random() < blankRatio;
+                        content = isBlank ? '<span class="blank-cell"></span>' : String(result);
+                    }
+                    tr.appendChild(makeCell(content, 'op-cell', !valid));
+                }
+
+                table.appendChild(tr);
+            }
+
+            return table;
+        }
+
+        function generateTable() {
+            const area = document.getElementById('previewArea');
+            const blankRatio = getBlankRatio();
+            area.innerHTML = '';
+
+            const title = document.createElement('div');
+            title.className = 'sheet-title';
+
+            let tableEl;
+            if (currentOp === 'mul') {
+                const maxNum = parseInt(document.getElementById('mulMax').value);
+                title.textContent = `✖️ 乘法表（1 ~ ${maxNum}）`;
+                tableEl = renderMultiplicationTable(maxNum, blankRatio);
+            } else if (currentOp === 'add') {
+                const maxNum = parseInt(document.getElementById('addMax').value);
+                title.textContent = `➕ 加法表（${maxNum} 以内）`;
+                tableEl = renderGridTable(maxNum, '+', blankRatio);
+            } else {
+                const maxNum = parseInt(document.getElementById('subMax').value);
+                title.textContent = `➖ 减法表（${maxNum} 以内）`;
+                tableEl = renderGridTable(maxNum, '-', blankRatio);
+            }
+
+            area.appendChild(title);
+            area.appendChild(tableEl);
+        }
+
+        function printTable() {
+            if (!document.querySelector('.mul-table, .op-table')) {
+                alert('请先生成运算表再打印！');
+                return;
+            }
+            window.print();
+        }
+    </script>
+</body>
+
+</html>
