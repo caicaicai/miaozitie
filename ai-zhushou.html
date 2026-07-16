@@ -18,6 +18,8 @@
             background: linear-gradient(135deg, #2c3e50 0%, #4a5568 100%);
             min-height: 100vh;
             padding: 20px;
+            /* 防止手机浏览器的"下拉刷新"手势在下载/加载过程中被意外触发 */
+            overscroll-behavior-y: contain;
         }
 
         .container {
@@ -270,6 +272,7 @@
                 <strong>⚠️ 使用前请注意：</strong>
                 <ul>
                     <li>这是实验性功能，依赖社区提供的浏览器版模型文件，可能不稳定或加载失败</li>
+                    <li id="mobileWarning" style="display: none;"><strong>检测到你正在用手机访问</strong>：这个功能对内存要求较高，手机上很容易出现"加载到一半页面自动刷新/卡住"的情况（本质是系统内存不足），成功率不如电脑浏览器，请酌情尝试，条件允许的话更建议换用电脑</li>
                     <li>如果想清理占用的存储空间、或者遇到问题想重新下载，可以点击下方"🗑️ 清理模型缓存"</li>
                     <li>首次使用需要下载约 <strong>500MB 以上</strong>的模型数据，仅下载一次，浏览器会自动缓存；请在网络良好时使用</li>
                     <li>本模型用的是 4bit 量化格式，<strong>主要依赖 WebGPU 显卡加速</strong>：完全没有可用显卡时可能直接加载失败，而不只是变慢；就算检测到了 WebGPU，<strong>集成显卡（核显）对 1B 参数模型来说仍然会比独立显卡慢很多</strong>，请耐心等待并降低速度预期</li>
@@ -281,6 +284,7 @@
             </div>
 
             <div class="device-status" id="deviceStatus">正在检测设备加速能力...</div>
+            <div class="device-status" id="crashHint" style="display: none; background: #fff3f0; color: #8a3324;"></div>
 
             <div class="button-group">
                 <button class="btn btn-primary" id="loadBtn">📥 加载模型</button>
@@ -328,13 +332,62 @@
             { role: 'system', content: '你是一个专为小学生内容创作服务的助手，回答要简洁、健康、适合儿童阅读，使用中文回复。' }
         ];
 
+        const LOAD_ATTEMPT_KEY = 'miaozitie_ai_load_attempt_inflight';
+
+        function isProbablyMobile() {
+            if (typeof navigator === 'undefined') return false;
+            return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+        }
+
+        // 独立于 ai-engine.js 内部超时机制之外，再加一层"看门狗"超时保护：
+        // 万一某个浏览器组合下内部的超时逻辑没能按预期触发（比如更底层的 API
+        // 出现了没预料到的卡住方式），这里的 setTimeout 是完全独立的一套定时器，
+        // 依然能强制让检测流程"超时收场"，不让页面卡在"正在检测..."上。
+        function raceTimeout(promise, ms, fallbackValue) {
+            return new Promise((resolve) => {
+                const timer = setTimeout(() => resolve(fallbackValue), ms);
+                Promise.resolve(promise).then((v) => {
+                    clearTimeout(timer);
+                    resolve(v);
+                }).catch(() => {
+                    clearTimeout(timer);
+                    resolve(fallbackValue);
+                });
+            });
+        }
+
+        // 如果上次点"加载模型"之后，这个标记一直没被清掉，说明上次加载过程中
+        // 页面被重新载入了（既没走到成功，也没走到失败提示）——在手机上，这基本
+        // 就是内存不足被系统/浏览器杀掉进程后自动刷新导致的。
+        function checkPreviousCrash() {
+            try {
+                if (sessionStorage.getItem(LOAD_ATTEMPT_KEY) === '1') {
+                    sessionStorage.removeItem(LOAD_ATTEMPT_KEY);
+                    const hint = document.getElementById('crashHint');
+                    hint.style.display = 'block';
+                    hint.textContent = '⚠️ 检测到上次加载模型的过程中，页面被重新载入了（没有走到"加载完成"或"加载失败"的提示）。' +
+                        '这种情况通常是设备内存不足导致的，手机上比较常见。建议换用电脑浏览器，或者先关闭一些其它应用/标签页释放内存后再试。';
+                }
+            } catch (e) {
+                // 忽略（隐私模式下 sessionStorage 可能不可用）
+            }
+        }
+
         async function initDeviceStatus() {
+            if (isProbablyMobile()) {
+                document.getElementById('mobileWarning').style.display = 'list-item';
+            }
+
             const el = document.getElementById('deviceStatus');
             el.textContent = '正在检测显卡加速能力...';
 
-            // detectGPUAdapter() 内部已经带了超时保护（最多等 4 秒），这里不会永远卡住；
-            // 即便某些手机浏览器的 requestAdapter() 一直不返回，也会在超时后拿到结果。
-            const gpu = await detectGPUAdapter();
+            // detectGPUAdapter() 内部已经带了超时保护（最多等 4 秒），这里额外再套一层
+            // 独立的看门狗超时（6 秒）兜底，双重保险，理论上不会再永远卡住。
+            const gpu = await raceTimeout(
+                detectGPUAdapter(),
+                6000,
+                { available: false, isFallback: false, info: null, timedOut: true }
+            );
 
             if (gpu.timedOut) {
                 el.textContent = '⚠️ 检测显卡加速超时，当前浏览器对 WebGPU 的支持可能不完整（手机浏览器上比较常见）。' +
@@ -370,6 +423,12 @@
             loadBtn.disabled = true;
             progressWrap.classList.add('active');
             loadStatus.textContent = '正在准备加载模型，请稍候...';
+            document.getElementById('crashHint').style.display = 'none';
+
+            // 加载开始时标记"正在进行"；只有明确加载成功或加载失败（走到下面的 catch）
+            // 才会清掉这个标记。如果页面在这中间被意外重新载入（比如手机内存不足），
+            // 这个标记会一直留着，下次打开页面时 checkPreviousCrash() 就能据此提示用户。
+            try { sessionStorage.setItem(LOAD_ATTEMPT_KEY, '1'); } catch (e) { /* 忽略 */ }
 
             try {
                 await loadAIModel((data) => {
@@ -386,11 +445,13 @@
                 loadStatus.textContent = '✅ 模型加载完成，可以开始对话啦！';
                 document.getElementById('chatPanel').classList.add('active');
                 document.getElementById('chatInput').focus();
+                try { sessionStorage.removeItem(LOAD_ATTEMPT_KEY); } catch (e) { /* 忽略 */ }
             } catch (err) {
                 console.error('模型加载失败:', err);
                 loadStatus.textContent = '❌ 模型加载失败：' + (err && err.message ? err.message : '未知错误') +
                     '。可能是网络问题，或该模型文件暂时不可用，请稍后重试。';
                 loadBtn.disabled = false;
+                try { sessionStorage.removeItem(LOAD_ATTEMPT_KEY); } catch (e) { /* 忽略 */ }
             }
         }
 
@@ -490,6 +551,7 @@
             }
         });
 
+        checkPreviousCrash();
         initDeviceStatus();
     </script>
 </body>
