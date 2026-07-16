@@ -3,6 +3,7 @@
 ## Project Structure & Module Organization
 This repo is a static, browser-only Chinese writing/learning practice site for elementary students. `index.html` is a dedicated navigation homepage (card grid linking to every tool); it has no practice UI of its own. Each tool lives in its own page in the root:
 - `bihua.html`: stroke-by-stroke practice (originally `index.html`; renamed when the homepage became a nav page).
+- `zice.html`: interactive handwriting self-quiz using Hanzi Writer's `quiz()` API (draw-and-check, not just animation).
 - `chaozi.html`: compact copy mode for articles.
 - `pinyin.html`: article pinyin annotation.
 - `tingxie.html`: spoken dictation practice (speech synthesis + printable answer sheet).
@@ -11,7 +12,7 @@ This repo is a static, browser-only Chinese writing/learning practice site for e
 
 Shared files, used across multiple pages (a deliberate exception to "inline everything", see below):
 - `common.css`: shared header/back-link/footer styles for every tool page (not used by `index.html`, which has its own standalone hero + card styles).
-- `ziku-data.js`: shared `gradeChars`/`allChars` character-bank data, used by `bihua.html` and `tingxie.html`.
+- `ziku-data.js`: shared `gradeChars`/`allChars` character-bank data, used by `bihua.html`, `tingxie.html`, and `zice.html`.
 - `hanzi-writer.min.js`, `pinyin-pro.min.js`, `tf.min.js`, `ziku.txt` (character data reference).
 
 Every tool page's header only shows a single "← 返回首页" link back to `index.html`; there is no longer a multi-page nav bar. Deployment notes are in `DEPLOYMENT.md`.

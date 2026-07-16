@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互动自测练字 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <script src="hanzi-writer.min.js"></script>
+    <script src="pinyin-pro.min.js"></script>
+    <script src="ziku-data.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%) !important;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .source-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .source-tab {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 2px solid #dfe3ea;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .source-tab.active {
+            border-color: #0ba360;
+            background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
+            color: white;
+        }
+
+        .source-panel {
+            display: none;
+        }
+
+        .source-panel.active {
+            display: block;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select,
+        .option-item input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .option-item input[type="number"] {
+            width: 70px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #0ba360;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #444;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .source-summary {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #0ba360;
+            font-weight: 600;
+            min-height: 18px;
+        }
+
+        /* ===== 测验区 ===== */
+        .quiz-stage {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .stage-empty {
+            color: #999;
+            padding: 30px 0;
+        }
+
+        .stage-empty::before {
+            content: "🎯";
+            display: block;
+            font-size: 3.5em;
+            margin-bottom: 10px;
+        }
+
+        .quiz-progress {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .quiz-target {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto 16px;
+            border: 2px solid #0ba360;
+            border-radius: 10px;
+            background: white;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .quiz-target .grid-line-h,
+        .quiz-target .grid-line-v {
+            position: absolute;
+            background: none;
+        }
+
+        .quiz-target .grid-line-h {
+            width: 100%;
+            height: 0;
+            top: 50%;
+            left: 0;
+            border-top: 1px dashed #a5d6a7;
+        }
+
+        .quiz-target .grid-line-v {
+            width: 0;
+            height: 100%;
+            top: 0;
+            left: 50%;
+            border-left: 1px dashed #a5d6a7;
+        }
+
+        .quiz-feedback {
+            font-size: 1.05em;
+            color: #444;
+            min-height: 28px;
+            margin-bottom: 18px;
+        }
+
+        .quiz-feedback.correct {
+            color: #0ba360;
+            font-weight: bold;
+        }
+
+        .quiz-feedback.mistake {
+            color: #e53935;
+            font-weight: bold;
+        }
+
+        .quiz-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stage-btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            background: #eef1f5;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stage-btn:hover {
+            background: #dfe4ea;
+        }
+
+        .stage-btn.danger {
+            background: #ffe3e3;
+            color: #d63333;
+        }
+
+        /* ===== 结算区 ===== */
+        .result-panel {
+            display: none;
+            padding: 0 30px 30px;
+        }
+
+        .result-panel.active {
+            display: block;
+        }
+
+        .result-summary {
+            background: #f0fbf6;
+            border: 1px solid #bfe9d3;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 15px;
+            color: #0b7a45;
+            margin-bottom: 16px;
+        }
+
+        .result-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .result-chip {
+            border-radius: 10px;
+            padding: 8px 14px;
+            text-align: center;
+            font-size: 16px;
+            min-width: 50px;
+        }
+
+        .result-chip .tag {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .result-chip.perfect {
+            background: #e6f9ee;
+            color: #0b7a45;
+        }
+
+        .result-chip.good {
+            background: #fff8e1;
+            color: #a67c00;
+        }
+
+        .result-chip.needs-practice {
+            background: #ffecec;
+            color: #c62828;
+        }
+
+        .result-chip.skipped {
+            background: #f0f0f0;
+            color: #888;
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+
+            .quiz-target {
+                width: 220px;
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🎯 互动自测练字</h1>
+            <p>用鼠标或手指按笔顺书写，系统实时判断对错</p>
+        </div>
+
+        <div class="control-panel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>选择要测验的生字后点击"开始自测"，在方格里按正确笔顺书写，写对/写错都会实时提示。建议使用触屏设备（平板/触屏电脑）体验更佳，鼠标拖拽也可以。
+            </div>
+
+            <div class="source-tabs">
+                <button class="source-tab active" id="tabGrade" onclick="switchSourceTab('grade')">📚 按年级抽取</button>
+                <button class="source-tab" id="tabCustom" onclick="switchSourceTab('custom')">✏️ 自定义内容</button>
+            </div>
+
+            <div class="source-panel active" id="panelGrade">
+                <div class="options-group">
+                    <div class="option-item">
+                        <label>选择年级：</label>
+                        <select id="gradeSelect">
+                            <option value="all">全部年级</option>
+                            <option value="1-1" selected>一年级上册</option>
+                            <option value="1-2">一年级下册</option>
+                            <option value="2-1">二年级上册</option>
+                            <option value="2-2">二年级下册</option>
+                            <option value="3-1">三年级上册</option>
+                            <option value="3-2">三年级下册</option>
+                            <option value="4-1">四年级上册</option>
+                            <option value="4-2">四年级下册</option>
+                            <option value="5-1">五年级上册</option>
+                            <option value="5-2">五年级下册</option>
+                            <option value="6-1">六年级上册</option>
+                            <option value="6-2">六年级下册</option>
+                        </select>
+                    </div>
+                    <div class="option-item">
+                        <label>随机数量：</label>
+                        <input type="number" id="randomCount" value="8" min="1" max="30">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="pickFromGrade()">🎲 随机抽取</button>
+                </div>
+            </div>
+
+            <div class="source-panel" id="panelCustom">
+                <textarea id="customInput" placeholder="输入要测验的汉字，例如：春夏秋冬"></textarea>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="useCustomList()">✅ 使用自定义内容</button>
+                </div>
+            </div>
+
+            <div class="source-summary" id="sourceSummary"></div>
+
+            <hr style="border: none; border-top: 1px solid #e9ecef; margin: 16px 0;">
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>提示轮廓：</label>
+                    <select id="outlineSelect">
+                        <option value="show" selected>开启（较简单）</option>
+                        <option value="hide">关闭（较难）</option>
+                    </select>
+                </div>
+                <div class="option-item">
+                    <label>自动提示时机：</label>
+                    <select id="hintSelect">
+                        <option value="1">写错 1 次后</option>
+                        <option value="3" selected>写错 3 次后</option>
+                        <option value="0">不自动提示</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="startBtn" onclick="beginQuiz()" disabled>▶️ 开始自测</button>
+            </div>
+        </div>
+
+        <div class="quiz-stage" id="quizStage">
+            <div class="stage-empty" id="stageEmpty">
+                请先在上方选择要测验的生字，再点击"开始自测"
+            </div>
+            <div id="quizActive" style="display: none;">
+                <div class="quiz-progress" id="quizProgress">第 1 / 8 个</div>
+                <div class="quiz-target" id="quizTarget"></div>
+                <div class="quiz-feedback" id="quizFeedback">准备中...</div>
+                <div class="quiz-controls">
+                    <button class="stage-btn" onclick="showHintAnimation()">💡 提示笔顺</button>
+                    <button class="stage-btn" onclick="retryCurrent()">🔄 重写</button>
+                    <button class="stage-btn" onclick="skipCurrent()">⏭ 跳过</button>
+                    <button class="stage-btn danger" onclick="stopQuiz()">⏹ 结束测验</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+            <h3 style="margin-bottom: 12px; color: #333;">📊 本次测验结果</h3>
+            <div class="result-summary" id="resultSummary"></div>
+            <div class="result-list" id="resultList"></div>
+            <div class="button-group">
+                <button class="btn btn-secondary" id="retryMistakesBtn" onclick="retryMistakes()">🔁 只重测写错的字</button>
+                <button class="btn btn-primary" onclick="stopQuiz()">🔄 重新设置</button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                基于 <a href="https://hanziwriter.org/" target="_blank" rel="noopener noreferrer">Hanzi Writer</a> 笔顺判定
+                &nbsp;|&nbsp;
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub 开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的互动练字自测工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let quizList = [];
+        let currentIndex = -1;
+        let writer = null;
+        let mistakeRecord = {}; // index -> mistakes count, or 'skipped'
+        let autoAdvanceTimer = null;
+
+        function switchSourceTab(tab) {
+            const isGrade = tab === 'grade';
+            document.getElementById('tabGrade').classList.toggle('active', isGrade);
+            document.getElementById('tabCustom').classList.toggle('active', !isGrade);
+            document.getElementById('panelGrade').classList.toggle('active', isGrade);
+            document.getElementById('panelCustom').classList.toggle('active', !isGrade);
+        }
+
+        function pickFromGrade() {
+            const grade = document.getElementById('gradeSelect').value;
+            const count = parseInt(document.getElementById('randomCount').value) || 8;
+            const pool = grade === 'all' ? allChars : (gradeChars[grade] || allChars);
+
+            if (!pool.length) {
+                alert('所选年级字库为空！');
+                return;
+            }
+
+            const actual = Math.min(count, pool.length);
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            quizList = shuffled.slice(0, actual);
+            onListReady();
+        }
+
+        function useCustomList() {
+            const raw = document.getElementById('customInput').value.trim();
+            if (!raw) {
+                alert('请输入要测验的汉字！');
+                return;
+            }
+
+            const chars = Array.from(raw).filter(ch => /[\u4e00-\u9fa5]/.test(ch));
+            if (!chars.length) {
+                alert('未识别到有效的汉字！');
+                return;
+            }
+
+            quizList = chars;
+            onListReady();
+        }
+
+        function onListReady() {
+            document.getElementById('sourceSummary').textContent =
+                `✅ 已准备 ${quizList.length} 个字，点击下方"开始自测"`;
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        function setFeedback(text, kind) {
+            const el = document.getElementById('quizFeedback');
+            el.textContent = text;
+            el.className = 'quiz-feedback' + (kind ? ' ' + kind : '');
+        }
+
+        function clearAutoAdvance() {
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+        }
+
+        function beginQuiz() {
+            if (!quizList.length) {
+                alert('请先选择要测验的汉字！');
+                return;
+            }
+
+            mistakeRecord = {};
+            currentIndex = 0;
+            document.getElementById('stageEmpty').style.display = 'none';
+            document.getElementById('quizActive').style.display = 'block';
+            document.getElementById('resultPanel').classList.remove('active');
+            loadCharForQuiz(currentIndex);
+        }
+
+        function loadCharForQuiz(index) {
+            clearAutoAdvance();
+            const char = quizList[index];
+            document.getElementById('quizProgress').textContent = `第 ${index + 1} / ${quizList.length} 个`;
+
+            const target = document.getElementById('quizTarget');
+            target.innerHTML = '<div class="grid-line-h"></div><div class="grid-line-v"></div>';
+
+            const size = target.clientWidth || 260;
+            const outlineOn = document.getElementById('outlineSelect').value === 'show';
+
+            try {
+                writer = HanziWriter.create(target, char, {
+                    width: size,
+                    height: size,
+                    padding: 10,
+                    showOutline: outlineOn,
+                    showCharacter: false,
+                    strokeColor: '#333',
+                    highlightColor: '#0ba360',
+                    drawingColor: '#0ba360'
+                });
+                setFeedback('✍️ 按笔顺写下这个字');
+                startQuizForCurrent();
+            } catch (error) {
+                console.error(`创建"${char}"的练字组件失败:`, error);
+                setFeedback('⚠️ 无法加载这个字，可能是生僻字，请点击"跳过"');
+            }
+        }
+
+        function startQuizForCurrent() {
+            if (!writer) return;
+            const hintAfter = parseInt(document.getElementById('hintSelect').value) || 0;
+
+            writer.quiz({
+                showHintAfterMisses: hintAfter === 0 ? false : hintAfter,
+                onCorrectStroke: function (strokeData) {
+                    if (strokeData.strokesRemaining > 0) {
+                        setFeedback(`✅ 写对了！还剩 ${strokeData.strokesRemaining} 笔`, 'correct');
+                    }
+                },
+                onMistake: function () {
+                    setFeedback('❌ 笔画顺序或位置不对，再试试', 'mistake');
+                },
+                onComplete: function (summaryData) {
+                    mistakeRecord[currentIndex] = summaryData.totalMistakes;
+                    setFeedback(
+                        summaryData.totalMistakes === 0 ? '🎉 完美！全部写对啦' : `✔️ 写完了！共写错 ${summaryData.totalMistakes} 次`,
+                        summaryData.totalMistakes === 0 ? 'correct' : ''
+                    );
+                    autoAdvanceTimer = setTimeout(nextChar, 1400);
+                }
+            });
+        }
+
+        function nextChar() {
+            clearAutoAdvance();
+            if (currentIndex >= quizList.length - 1) {
+                finishQuiz();
+                return;
+            }
+            currentIndex++;
+            loadCharForQuiz(currentIndex);
+        }
+
+        function retryCurrent() {
+            loadCharForQuiz(currentIndex);
+        }
+
+        function skipCurrent() {
+            mistakeRecord[currentIndex] = 'skipped';
+            nextChar();
+        }
+
+        function showHintAnimation() {
+            if (!writer) return;
+            clearAutoAdvance();
+            writer.cancelQuiz();
+            setFeedback('💡 认真看笔顺演示...');
+            writer.animateCharacter({
+                onComplete: function () {
+                    setFeedback('✍️ 现在轮到你写啦');
+                    startQuizForCurrent();
+                }
+            });
+        }
+
+        function stopQuiz() {
+            clearAutoAdvance();
+            if (writer) {
+                try { writer.cancelQuiz(); } catch (e) { /* ignore */ }
+            }
+            currentIndex = -1;
+            document.getElementById('stageEmpty').style.display = 'block';
+            document.getElementById('quizActive').style.display = 'none';
+            document.getElementById('resultPanel').classList.remove('active');
+        }
+
+        function finishQuiz() {
+            clearAutoAdvance();
+            document.getElementById('quizActive').style.display = 'none';
+            document.getElementById('stageEmpty').style.display = 'none';
+
+            const total = quizList.length;
+            let perfect = 0, good = 0, needsPractice = 0, skipped = 0;
+
+            const listEl = document.getElementById('resultList');
+            listEl.innerHTML = quizList.map((char, i) => {
+                const record = mistakeRecord[i];
+                let cls, tag;
+                if (record === 'skipped' || record === undefined) {
+                    cls = 'skipped'; tag = '已跳过'; skipped++;
+                } else if (record === 0) {
+                    cls = 'perfect'; tag = '完美'; perfect++;
+                } else if (record <= 2) {
+                    cls = 'good'; tag = `写错${record}次`; good++;
+                } else {
+                    cls = 'needs-practice'; tag = `写错${record}次`; needsPractice++;
+                }
+                return `<div class="result-chip ${cls}">${char}<span class="tag">${tag}</span></div>`;
+            }).join('');
+
+            document.getElementById('resultSummary').textContent =
+                `共测验 ${total} 个字：完美 ${perfect} 个，良好 ${good} 个，需多练 ${needsPractice} 个${skipped ? `，跳过 ${skipped} 个` : ''}。`;
+
+            document.getElementById('retryMistakesBtn').style.display = (good + needsPractice) > 0 ? 'inline-block' : 'none';
+            document.getElementById('resultPanel').classList.add('active');
+        }
+
+        function retryMistakes() {
+            const mistakeChars = quizList.filter((_, i) => {
+                const record = mistakeRecord[i];
+                return record !== undefined && record !== 'skipped' && record > 0;
+            });
+
+            if (!mistakeChars.length) {
+                alert('太棒了，没有需要重测的字！');
+                return;
+            }
+
+            quizList = mistakeChars;
+            document.getElementById('resultPanel').classList.remove('active');
+            beginQuiz();
+        }
+    </script>
+</body>
+
+</html>
