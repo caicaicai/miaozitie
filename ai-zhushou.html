@@ -332,7 +332,15 @@
             const el = document.getElementById('deviceStatus');
             el.textContent = '正在检测显卡加速能力...';
 
+            // detectGPUAdapter() 内部已经带了超时保护（最多等 4 秒），这里不会永远卡住；
+            // 即便某些手机浏览器的 requestAdapter() 一直不返回，也会在超时后拿到结果。
             const gpu = await detectGPUAdapter();
+
+            if (gpu.timedOut) {
+                el.textContent = '⚠️ 检测显卡加速超时，当前浏览器对 WebGPU 的支持可能不完整（手机浏览器上比较常见）。' +
+                    '你仍然可以直接点击"加载模型"试试，只是如果实际没有可用显卡，本模型可能会加载失败或运行极慢。';
+                return;
+            }
 
             if (!gpu.available) {
                 el.textContent = '❌ 未检测到可用的 WebGPU 显卡适配器。本模型使用的 4bit 量化格式主要依赖 WebGPU，' +

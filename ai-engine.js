@@ -14,6 +14,33 @@ const READY_FLAG_KEY = 'miaozitie_ai_model_ready';
 
 let generatorPromise = null;
 
+// 给一个 Promise 加超时保护：超过 ms 毫秒还没有 resolve/reject，就直接用
+// fallbackValue "顶上"，不让调用方永远卡住。部分浏览器（尤其是一些手机浏览器）
+// 里 navigator.gpu.requestAdapter() / requestAdapterInfo() 可能会一直不返回，
+// 既不成功也不报错，所以这里不能只靠 try/catch。
+function withTimeout(promise, ms, fallbackValue) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            resolve(fallbackValue);
+        }, ms);
+
+        Promise.resolve(promise).then((value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(value);
+        }).catch(() => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(fallbackValue);
+        });
+    });
+}
+
 // 只判断 `navigator.gpu` 是否存在并不可靠：有些浏览器/设备组合下这个 API 存在，
 // 但实际拿不到真实显卡适配器（会得到软件模拟的 fallback adapter，速度跟纯 CPU
 // 差不多）；即使拿到了真实适配器，如果是集成显卡（核显），对 1B 参数模型这种
@@ -23,33 +50,40 @@ let generatorPromise = null;
 // 另外要注意：q4 量化模型用到的部分算子（如 4bit 的 GatherBlockQuantized）
 // 目前只有 WebGPU 版本的实现、没有对应的 WASM(CPU) 内核，所以如果完全没有可用
 // 的 WebGPU 适配器，这个模型可能不是"慢"，而是直接加载/推理失败。
+//
+// 手机浏览器上 navigator.gpu.requestAdapter()（或 requestAdapterInfo()）有时会
+// 一直不返回结果（既不成功也不报错），所以整个检测过程都套了超时保护，最多
+// 等 4 秒，避免页面卡在"正在检测..."上不动。
 export async function detectGPUAdapter() {
     if (typeof navigator === 'undefined' || !('gpu' in navigator)) {
-        return { available: false, isFallback: false, info: null };
+        return { available: false, isFallback: false, info: null, timedOut: false };
     }
 
-    try {
-        const adapter = await navigator.gpu.requestAdapter();
-        if (!adapter) {
-            return { available: false, isFallback: false, info: null };
-        }
-
-        let info = null;
+    const detect = (async () => {
         try {
-            if (typeof adapter.requestAdapterInfo === 'function') {
-                info = await adapter.requestAdapterInfo();
-            } else if (adapter.info) {
-                info = adapter.info;
+            const adapter = await navigator.gpu.requestAdapter();
+            if (!adapter) {
+                return { available: false, isFallback: false, info: null, timedOut: false };
             }
-        } catch (e) {
-            info = null; // 部分浏览器出于隐私考虑限制读取详细信息，拿不到也不影响主流程
-        }
 
-        const isFallback = !!(adapter.isFallbackAdapter || (info && info.isFallbackAdapter));
-        return { available: true, isFallback, info };
-    } catch (e) {
-        return { available: false, isFallback: false, info: null };
-    }
+            let info = null;
+            try {
+                const infoPromise = typeof adapter.requestAdapterInfo === 'function'
+                    ? adapter.requestAdapterInfo()
+                    : Promise.resolve(adapter.info || null);
+                info = await withTimeout(infoPromise, 2000, null);
+            } catch (e) {
+                info = null; // 部分浏览器出于隐私考虑限制读取详细信息，拿不到也不影响主流程
+            }
+
+            const isFallback = !!(adapter.isFallbackAdapter || (info && info.isFallbackAdapter));
+            return { available: true, isFallback, info, timedOut: false };
+        } catch (e) {
+            return { available: false, isFallback: false, info: null, timedOut: false };
+        }
+    })();
+
+    return withTimeout(detect, 4000, { available: false, isFallback: false, info: null, timedOut: true });
 }
 
 // 同步、粗略的判断（只看 API 是否存在），仅用于加载模型时决定 device 参数。
