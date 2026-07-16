@@ -15,6 +15,7 @@ This repo is a static, browser-only Chinese writing/learning practice site for e
 - `gushi.html`: printable classical-poem cards (recite mode with auto pinyin via Pinyin Pro, or blank-line dictation mode); poem text is hardcoded curated public-domain content — double-check exact wording against a reliable source before adding more poems.
 - `kechengbiao.html`: class timetable generator; the generated table cells are plain `<input>` fields the user types directly into (no per-subject data model).
 - `renminbi.html`: RMB "make the amount" interactive drill (click denominations to match a random target); amounts are tracked internally in 角 (jiao) integer units to avoid floating-point issues.
+- `xingjinzi.html`: multiple-choice quiz for commonly-confused look-alike characters (形近字), e.g. 己/已/巳, 做/作/坐/座; question bank is hardcoded curated content — verify sentence grammar and character correctness carefully before adding more items.
 
 Shared files, used across multiple pages (a deliberate exception to "inline everything", see below):
 - `common.css`: shared header/back-link/footer styles for every tool page (not used by `index.html`, which has its own standalone hero + card styles).
