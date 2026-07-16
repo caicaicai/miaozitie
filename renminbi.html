@@ -284,7 +284,7 @@
 
         <div class="control-panel">
             <div class="hint">
-                <strong>💡 使用说明：</strong>系统会随机给出一个目标金额，点击下方的钱币面额把它们加起来，凑到和目标金额一致后点击"确认"。
+                <strong>💡 使用说明：</strong>系统会随机给出一个目标金额，点击下方的钱币面额把它们加起来，凑够目标金额后会自动判对并进入下一题，无需再点确认。
             </div>
 
             <div class="options-group">
@@ -329,9 +329,8 @@
                 <div class="quiz-feedback" id="quizFeedback"></div>
 
                 <div class="button-group" style="justify-content: center;">
-                    <button class="btn btn-secondary" onclick="undoChip()">↩️ 撤销一个</button>
-                    <button class="btn btn-secondary" onclick="clearChips()">🗑️ 清空</button>
-                    <button class="btn btn-primary" id="confirmBtn" onclick="checkMoneyAnswer()">✅ 确认</button>
+                    <button class="btn btn-secondary" id="undoBtn" onclick="undoChip()">↩️ 撤销一个</button>
+                    <button class="btn btn-secondary" id="clearBtn" onclick="clearChips()">🗑️ 清空</button>
                     <button class="btn btn-secondary" id="nextRoundBtn" style="display: none;"
                         onclick="nextMoneyRound()">⏭ 下一题</button>
                 </div>
@@ -373,6 +372,8 @@
         let correctCount = 0;
         let target = 0;
         let selectedChips = [];
+        let roundLocked = false;
+        let autoAdvanceTimer = null;
 
         function formatMoney(jiao) {
             const yuan = Math.floor(jiao / 10);
@@ -396,16 +397,19 @@
         }
 
         function addChip(d) {
+            if (roundLocked) return;
             selectedChips.push(d);
             renderTray();
         }
 
         function undoChip() {
+            if (roundLocked) return;
             selectedChips.pop();
             renderTray();
         }
 
         function clearChips() {
+            if (roundLocked) return;
             selectedChips = [];
             renderTray();
         }
@@ -415,7 +419,31 @@
             chipsWrap.innerHTML = selectedChips.map(d => `<span class="tray-chip">${d.label}</span>`).join('');
             const sum = selectedChips.reduce((acc, d) => acc + d.v, 0);
             document.getElementById('trayTotal').textContent = `合计：${formatMoney(sum)}`;
+            if (!roundLocked) updateLiveFeedback(sum);
             return sum;
+        }
+
+        function setMoneyControlsDisabled(disabled) {
+            document.querySelectorAll('.money-chip').forEach(btn => { btn.disabled = disabled; });
+            document.getElementById('undoBtn').disabled = disabled;
+            document.getElementById('clearBtn').disabled = disabled;
+        }
+
+        function updateLiveFeedback(sum) {
+            if (sum === target) {
+                roundLocked = true;
+                correctCount++;
+                setFeedback('✅ 凑对了，真棒！', 'correct');
+                setMoneyControlsDisabled(true);
+                document.getElementById('nextRoundBtn').style.display = 'inline-block';
+                autoAdvanceTimer = setTimeout(nextMoneyRound, 1200);
+            } else if (sum === 0) {
+                setFeedback('');
+            } else if (sum > target) {
+                setFeedback(`还多了 ${formatMoney(sum - target)}，试着去掉一些`, 'mistake');
+            } else {
+                setFeedback(`还差 ${formatMoney(target - sum)}，请继续添加`, '');
+            }
         }
 
         function randomTarget(includeJiao) {
@@ -447,6 +475,11 @@
         }
 
         function nextMoneyRound() {
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+
             if (roundIndex >= roundTotal) {
                 finishMoneyQuiz();
                 return;
@@ -456,29 +489,15 @@
             const includeJiao = document.getElementById('difficultySelect').value === 'jiao';
             target = randomTarget(includeJiao);
             selectedChips = [];
+            roundLocked = false;
 
             document.getElementById('quizProgress').textContent = `第 ${roundIndex} / ${roundTotal} 题`;
             document.getElementById('targetAmount').textContent = `目标：${formatMoney(target)}`;
             renderMoneyButtons(includeJiao);
+            setMoneyControlsDisabled(false);
             renderTray();
             setFeedback('');
-            document.getElementById('confirmBtn').style.display = 'inline-block';
             document.getElementById('nextRoundBtn').style.display = 'none';
-        }
-
-        function checkMoneyAnswer() {
-            const sum = selectedChips.reduce((acc, d) => acc + d.v, 0);
-
-            if (sum === target) {
-                correctCount++;
-                setFeedback('✅ 凑对了，真棒！', 'correct');
-                document.getElementById('confirmBtn').style.display = 'none';
-                document.getElementById('nextRoundBtn').style.display = 'inline-block';
-            } else if (sum > target) {
-                setFeedback(`❌ 多了 ${formatMoney(sum - target)}，请去掉一些`, 'mistake');
-            } else {
-                setFeedback(`❌ 还差 ${formatMoney(target - sum)}，请再加一些`, 'mistake');
-            }
         }
 
         function finishMoneyQuiz() {
