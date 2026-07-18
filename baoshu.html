@@ -191,6 +191,33 @@
             display: block;
         }
 
+        .timing-banner {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff3e0;
+            border: 2px solid #fc4a1a;
+            border-radius: 30px;
+            padding: 8px 22px;
+            font-size: 1.05em;
+            font-weight: bold;
+            color: #d63333;
+            margin-bottom: 20px;
+            animation: bannerPulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes bannerPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
         .progress-label {
             font-size: 1.1em;
             font-weight: bold;
@@ -308,7 +335,7 @@
 
         <div class="control-panel" id="controlPanel">
             <div class="hint">
-                <strong>💡 使用说明：</strong>设置好数字、正计时/倒计时、间隔和报数方式后，点击"开始报数"，屏幕会一个接一个显示数字，还可以选择语音读出来或用提示音代替。也可以直接点击下方"1/3/5/10 分钟"快捷按钮，一键开始对应时长的倒计时。
+                <strong>💡 使用说明：</strong>设置好数字、正计时/倒计时、间隔和报数方式后，点击"开始报数"，屏幕会一个接一个显示数字，还可以选择语音读出来或用提示音代替。"报时间隔"可以控制多久报一次（默认每个都报，也可以改成每 5/10/30/60 个才报一次，适合数字很大的场景）。也可以直接点击下方"1/3/5/10 分钟"快捷按钮，一键开始对应时长的倒计时。开始后画面会切换成专门的计时界面，明确提示"计时进行中"。
             </div>
 
             <div class="mode-toggle">
@@ -364,6 +391,16 @@
                         <option value="1.3">快</option>
                     </select>
                 </div>
+                <div class="option-item">
+                    <label>报时间隔：</label>
+                    <select id="reportIntervalSelect">
+                        <option value="1" selected>每 1 个都报</option>
+                        <option value="5">每 5 个报一次</option>
+                        <option value="10">每 10 个报一次</option>
+                        <option value="30">每 30 个报一次</option>
+                        <option value="60">每 60 个报一次（大数模式）</option>
+                    </select>
+                </div>
             </div>
 
             <div class="button-group">
@@ -377,6 +414,7 @@
             </div>
 
             <div id="stageActive" style="display: none;">
+                <div class="timing-banner">⏱️ 计时进行中...</div>
                 <div class="progress-label" id="progressLabel">1 / 10</div>
                 <div class="progress-track">
                     <div class="progress-bar" id="progressBar"></div>
@@ -469,20 +507,25 @@
             return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         }
 
+        // 是否要在"报时间隔"意义上到达报数的这一步。第一个和最后一个总是报，
+        // 中间按用户设置的间隔（每 N 个报一次）来决定，具体报什么由 announceNumber() 决定。
+        function shouldAnnounceAtIndex(index, total, reportEvery) {
+            if (index === 0 || index === total - 1) return true;
+            return reportEvery <= 1 || index % reportEvery === 0;
+        }
+
         function announceNumber(num, isLast) {
             const soundMode = document.getElementById('soundMode').value;
 
             if (soundMode === 'voice') {
-                // 时间较长（超过10秒）时，只在整分钟报一次"X分钟"，不会每秒都读数字，
-                // 否则一个 10 分钟倒计时会一直不停地报"600、599、598..."。
-                // 最后 10 秒仍然会正常逐秒报数，方便收尾。
-                if (isTimeFormatMode() && num > 10) {
-                    if (num % 60 === 0) {
-                        speakNumber(Math.floor(num / 60) + '分钟');
-                    }
-                    return;
+                // 分:秒显示模式下，遇到整分钟的数字就说"X分钟"，读起来更自然；
+                // 其它情况直接读数字本身。多久报一次由 shouldAnnounceAtIndex() 控制，
+                // 这里只管"这次报的时候该说什么"。
+                if (isTimeFormatMode() && num > 0 && num % 60 === 0) {
+                    speakNumber(Math.floor(num / 60) + '分钟');
+                } else {
+                    speakNumber(num);
                 }
-                speakNumber(num);
             } else if (soundMode === 'beep') {
                 playBeep(isLast ? 1040 : 660, isLast ? 0.28 : 0.15);
             }
@@ -518,11 +561,15 @@
             isRunning = true;
             isPaused = false;
 
-            document.getElementById('startBtn').disabled = true;
+            // 不管是手动点"开始报数"还是点快捷计时按钮，都统一切换成专门的计时画面：
+            // 隐藏设置面板，只留计时舞台，避免用户看不到正在进行的计时。
+            document.getElementById('controlPanel').style.display = 'none';
             document.getElementById('stageEmpty').style.display = 'none';
             document.getElementById('finishPanel').classList.remove('active');
             document.getElementById('stageActive').style.display = 'block';
             document.getElementById('pauseBtn').textContent = '⏸ 暂停';
+
+            document.getElementById('countingStage').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             tickNext();
         }
@@ -537,8 +584,12 @@
 
             const num = sequence[currentIndex];
             const isLast = currentIndex === sequence.length - 1;
-            displayNumber(num, isLast);
-            announceNumber(num, isLast);
+            const reportEvery = parseInt(document.getElementById('reportIntervalSelect').value) || 1;
+
+            displayNumber(num, isLast); // 画面每一个都更新，不受"报时间隔"影响
+            if (shouldAnnounceAtIndex(currentIndex, sequence.length, reportEvery)) {
+                announceNumber(num, isLast); // 只有轮到"该报"的这一步才发声
+            }
 
             document.getElementById('progressLabel').textContent = `第 ${currentIndex + 1} / ${sequence.length} 个`;
             document.getElementById('progressBar').style.width = `${Math.round(((currentIndex + 1) / sequence.length) * 100)}%`;
@@ -624,6 +675,7 @@
         }
 
         function backToSetup() {
+            document.getElementById('controlPanel').style.display = 'block';
             document.getElementById('stageActive').style.display = 'none';
             document.getElementById('finishPanel').classList.remove('active');
             document.getElementById('stageEmpty').style.display = 'block';
