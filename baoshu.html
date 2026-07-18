@@ -107,6 +107,37 @@
             color: white;
         }
 
+        .quick-timer-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .quick-timer-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .quick-btn {
+            padding: 6px 16px;
+            border-radius: 16px;
+            border: 2px solid #ffd8a8;
+            background: #fff8ee;
+            color: #b8560f;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            border-color: #fc4a1a;
+            background: #ffe9d2;
+            transform: translateY(-1px);
+        }
+
         .button-group {
             display: flex;
             gap: 12px;
@@ -277,12 +308,20 @@
 
         <div class="control-panel" id="controlPanel">
             <div class="hint">
-                <strong>💡 使用说明：</strong>设置好数字、正计时/倒计时、间隔和报数方式后，点击"开始报数"，屏幕会一个接一个显示数字，还可以选择语音读出来或用提示音代替。
+                <strong>💡 使用说明：</strong>设置好数字、正计时/倒计时、间隔和报数方式后，点击"开始报数"，屏幕会一个接一个显示数字，还可以选择语音读出来或用提示音代替。也可以直接点击下方"1/3/5/10 分钟"快捷按钮，一键开始对应时长的倒计时。
             </div>
 
             <div class="mode-toggle">
                 <button class="mode-btn active" id="modeUpBtn" onclick="setMode('up')">⬆️ 正计时（1 → 数字）</button>
                 <button class="mode-btn" id="modeDownBtn" onclick="setMode('down')">⬇️ 倒计时（数字 → 1）</button>
+            </div>
+
+            <div class="quick-timer-row">
+                <span class="quick-timer-label">⏱️ 快捷计时（点击直接开始）：</span>
+                <button class="quick-btn" onclick="quickTimer(1)">1 分钟</button>
+                <button class="quick-btn" onclick="quickTimer(3)">3 分钟</button>
+                <button class="quick-btn" onclick="quickTimer(5)">5 分钟</button>
+                <button class="quick-btn" onclick="quickTimer(10)">10 分钟</button>
             </div>
 
             <div class="options-group">
@@ -299,6 +338,12 @@
                         <option value="2">2 秒</option>
                         <option value="3">3 秒</option>
                     </select>
+                </div>
+                <div class="option-item">
+                    <label>
+                        <input type="checkbox" id="timeFormatCheckbox">
+                        按分:秒显示（如 03:00）
+                    </label>
                 </div>
             </div>
 
@@ -412,9 +457,31 @@
             }
         }
 
+        function isTimeFormatMode() {
+            return document.getElementById('timeFormatCheckbox').checked;
+        }
+
+        // 按 分:秒 格式显示数字（比如 180 显示成 03:00），只在勾选"按分:秒显示"时启用。
+        function formatDisplay(num) {
+            if (!isTimeFormatMode()) return String(num);
+            const m = Math.floor(num / 60);
+            const s = num % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
         function announceNumber(num, isLast) {
             const soundMode = document.getElementById('soundMode').value;
+
             if (soundMode === 'voice') {
+                // 时间较长（超过10秒）时，只在整分钟报一次"X分钟"，不会每秒都读数字，
+                // 否则一个 10 分钟倒计时会一直不停地报"600、599、598..."。
+                // 最后 10 秒仍然会正常逐秒报数，方便收尾。
+                if (isTimeFormatMode() && num > 10) {
+                    if (num % 60 === 0) {
+                        speakNumber(Math.floor(num / 60) + '分钟');
+                    }
+                    return;
+                }
                 speakNumber(num);
             } else if (soundMode === 'beep') {
                 playBeep(isLast ? 1040 : 660, isLast ? 0.28 : 0.15);
@@ -492,11 +559,20 @@
 
         function displayNumber(num, isLast) {
             const el = document.getElementById('numberDisplay');
-            el.textContent = num;
+            el.textContent = formatDisplay(num);
             el.classList.toggle('final', !!isLast);
             el.classList.remove('pop');
             void el.offsetWidth; // 强制重排，让动画可以重新触发
             el.classList.add('pop');
+        }
+
+        // 快捷计时：一键设置为"倒计时 + 对应秒数 + 1秒间隔 + 分:秒显示"并立即开始。
+        function quickTimer(minutes) {
+            setMode('down');
+            document.getElementById('targetNumber').value = minutes * 60;
+            document.getElementById('intervalSelect').value = '1';
+            document.getElementById('timeFormatCheckbox').checked = true;
+            startCounting();
         }
 
         function togglePause() {
@@ -528,13 +604,18 @@
             clearTimeout(timerHandle);
 
             const finishTitle = document.getElementById('finishTitle');
-            finishTitle.textContent = currentMode === 'down' ? '🎉 倒计时结束，开始吧！' : '🎉 报数完成！';
+            if (isTimeFormatMode()) {
+                finishTitle.textContent = '⏰ 时间到！';
+            } else {
+                finishTitle.textContent = currentMode === 'down' ? '🎉 倒计时结束，开始吧！' : '🎉 报数完成！';
+            }
 
             const soundMode = document.getElementById('soundMode').value;
             if (soundMode === 'beep') {
                 playBeep(1240, 0.35);
             } else if (soundMode === 'voice' && currentMode === 'down') {
-                setTimeout(() => speakNumber('开始'), 150);
+                const finalWord = isTimeFormatMode() ? '时间到' : '开始';
+                setTimeout(() => speakNumber(finalWord), 150);
             }
 
             document.getElementById('stageActive').style.display = 'none';
