@@ -180,15 +180,13 @@
             box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
         }
 
-        /* ===== 报数舞台 ===== */
+        /* ===== 报数舞台 =====
+           这个容器本身始终是可见的；具体显示"设置提示 / 计时中 / 完成"哪一个，
+           完全由内部的 #stageEmpty / #stageActive / #finishPanel 各自的
+           display 状态决定（在 JS 里切换）。 */
         .counting-stage {
-            display: none;
             padding: 40px 30px;
             text-align: center;
-        }
-
-        .counting-stage.active {
-            display: block;
         }
 
         .timing-banner {
@@ -468,7 +466,11 @@
 
         function speakNumber(num) {
             if (!('speechSynthesis' in window)) return;
-            speechSynthesis.cancel();
+            // 注意：这里不能在每次报数前调用 speechSynthesis.cancel()。
+            // 如果上一个数字（比如"一百一十二"这种多音节的）还没读完，cancel()
+            // 会把它读一半直接打断，紧接着新的话又开始播，听起来就像两个数字
+            // 叠在一起、含糊不清。改成直接 speak()，让浏览器按队列顺序依次读完，
+            // 数字较大、间隔较短时声音可能会略微"追赶"画面，但不会再重叠/打断。
             const utter = new SpeechSynthesisUtterance(String(num));
             utter.lang = 'zh-CN';
             if (zhVoice) utter.voice = zhVoice;
