@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报数计时 - 喵字帖</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%) !important;
+        }
+
+        .control-panel {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .hint {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #7a5c00;
+            line-height: 1.6;
+        }
+
+        .options-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .option-item select,
+        .option-item input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .option-item input[type="number"] {
+            width: 80px;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #fc4a1a;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 2px solid #dfe3ea;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            border-color: #fc4a1a;
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            color: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #444;
+        }
+
+        .btn-danger {
+            background: #ffe3e3;
+            color: #d63333;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== 报数舞台 ===== */
+        .counting-stage {
+            display: none;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .counting-stage.active {
+            display: block;
+        }
+
+        .progress-label {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .progress-track {
+            max-width: 320px;
+            margin: 0 auto 24px;
+            background: #eee;
+            border-radius: 20px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            transition: width 0.25s ease-out;
+        }
+
+        .number-display {
+            font-size: 7em;
+            font-weight: bold;
+            color: #fc4a1a;
+            line-height: 1;
+            margin-bottom: 28px;
+            min-height: 1.2em;
+        }
+
+        .number-display.final {
+            color: #d63333;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.4);
+                opacity: 0.3;
+            }
+
+            60% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .number-display.pop {
+            animation: popIn 0.3s ease-out;
+        }
+
+        .stage-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stage-empty {
+            color: #999;
+            padding: 30px 0;
+        }
+
+        .stage-empty::before {
+            content: "🔢";
+            display: block;
+            font-size: 3.5em;
+            margin-bottom: 10px;
+        }
+
+        .finish-panel {
+            display: none;
+        }
+
+        .finish-panel.active {
+            display: block;
+        }
+
+        .finish-title {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 18px;
+            }
+
+            .number-display {
+                font-size: 5em;
+            }
+
+            .counting-stage {
+                padding: 30px 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-link">← 返回首页</a>
+            <h1>🔢 报数计时</h1>
+            <p>设置一个数字，一个一个报数，边看边听</p>
+        </div>
+
+        <div class="control-panel" id="controlPanel">
+            <div class="hint">
+                <strong>💡 使用说明：</strong>设置好数字、正计时/倒计时、间隔和报数方式后，点击"开始报数"，屏幕会一个接一个显示数字，还可以选择语音读出来或用提示音代替。
+            </div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="modeUpBtn" onclick="setMode('up')">⬆️ 正计时（1 → 数字）</button>
+                <button class="mode-btn" id="modeDownBtn" onclick="setMode('down')">⬇️ 倒计时（数字 → 1）</button>
+            </div>
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>数到：</label>
+                    <input type="number" id="targetNumber" value="10" min="1" max="999">
+                </div>
+                <div class="option-item">
+                    <label>每个数字间隔：</label>
+                    <select id="intervalSelect">
+                        <option value="0.5">0.5 秒</option>
+                        <option value="1" selected>1 秒</option>
+                        <option value="1.5">1.5 秒</option>
+                        <option value="2">2 秒</option>
+                        <option value="3">3 秒</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="options-group">
+                <div class="option-item">
+                    <label>报数方式：</label>
+                    <select id="soundMode" onchange="toggleRateVisibility()">
+                        <option value="voice" selected>🔊 语音报数</option>
+                        <option value="beep">🔔 提示音</option>
+                        <option value="silent">🔇 静音（只看画面）</option>
+                    </select>
+                </div>
+                <div class="option-item" id="rateWrap">
+                    <label>语速：</label>
+                    <select id="rateSelect">
+                        <option value="0.8">慢</option>
+                        <option value="1" selected>正常</option>
+                        <option value="1.3">快</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="startBtn" onclick="startCounting()">▶️ 开始报数</button>
+            </div>
+        </div>
+
+        <div class="counting-stage" id="countingStage">
+            <div class="stage-empty" id="stageEmpty">
+                设置好参数后，点击"开始报数"
+            </div>
+
+            <div id="stageActive" style="display: none;">
+                <div class="progress-label" id="progressLabel">1 / 10</div>
+                <div class="progress-track">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="number-display" id="numberDisplay">1</div>
+                <div class="stage-controls">
+                    <button class="btn btn-secondary" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
+                    <button class="btn btn-danger" onclick="stopCounting()">⏹ 结束</button>
+                </div>
+            </div>
+
+            <div class="finish-panel" id="finishPanel">
+                <div class="finish-title" id="finishTitle">🎉 报数完成！</div>
+                <div class="button-group" style="justify-content: center;">
+                    <button class="btn btn-primary" onclick="startCounting()">🔄 再来一次</button>
+                    <button class="btn btn-secondary" onclick="backToSetup()">⚙️ 重新设置</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
+                    开源</a>
+                &nbsp;|&nbsp; MIT License · 专为小学生设计的报数计时工具
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let currentMode = 'up';
+        let sequence = [];
+        let currentIndex = 0;
+        let timerHandle = null;
+        let isRunning = false;
+        let isPaused = false;
+        let zhVoice = null;
+        let audioCtx = null;
+
+        // ===== 语音相关 =====
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            const voices = speechSynthesis.getVoices();
+            zhVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('zh')) || null;
+        }
+
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function speakNumber(num) {
+            if (!('speechSynthesis' in window)) return;
+            speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(String(num));
+            utter.lang = 'zh-CN';
+            if (zhVoice) utter.voice = zhVoice;
+            utter.rate = parseFloat(document.getElementById('rateSelect').value) || 1;
+            speechSynthesis.speak(utter);
+        }
+
+        // ===== 提示音相关（Web Audio API，不需要额外音频文件） =====
+        function playBeep(freq, duration) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.value = 0.25;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log('播放提示音失败', e);
+            }
+        }
+
+        function announceNumber(num, isLast) {
+            const soundMode = document.getElementById('soundMode').value;
+            if (soundMode === 'voice') {
+                speakNumber(num);
+            } else if (soundMode === 'beep') {
+                playBeep(isLast ? 1040 : 660, isLast ? 0.28 : 0.15);
+            }
+        }
+
+        function toggleRateVisibility() {
+            const isVoice = document.getElementById('soundMode').value === 'voice';
+            document.getElementById('rateWrap').style.display = isVoice ? 'flex' : 'none';
+        }
+
+        // ===== 模式切换 =====
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeUpBtn').classList.toggle('active', mode === 'up');
+            document.getElementById('modeDownBtn').classList.toggle('active', mode === 'down');
+        }
+
+        function buildSequence(mode, target) {
+            const seq = [];
+            if (mode === 'up') {
+                for (let i = 1; i <= target; i++) seq.push(i);
+            } else {
+                for (let i = target; i >= 1; i--) seq.push(i);
+            }
+            return seq;
+        }
+
+        // ===== 报数主流程 =====
+        function startCounting() {
+            const target = Math.min(999, Math.max(1, parseInt(document.getElementById('targetNumber').value) || 10));
+            sequence = buildSequence(currentMode, target);
+            currentIndex = 0;
+            isRunning = true;
+            isPaused = false;
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stageEmpty').style.display = 'none';
+            document.getElementById('finishPanel').classList.remove('active');
+            document.getElementById('stageActive').style.display = 'block';
+            document.getElementById('pauseBtn').textContent = '⏸ 暂停';
+
+            tickNext();
+        }
+
+        function tickNext() {
+            if (!isRunning || isPaused) return;
+
+            if (currentIndex >= sequence.length) {
+                finishCounting();
+                return;
+            }
+
+            const num = sequence[currentIndex];
+            const isLast = currentIndex === sequence.length - 1;
+            displayNumber(num, isLast);
+            announceNumber(num, isLast);
+
+            document.getElementById('progressLabel').textContent = `第 ${currentIndex + 1} / ${sequence.length} 个`;
+            document.getElementById('progressBar').style.width = `${Math.round(((currentIndex + 1) / sequence.length) * 100)}%`;
+
+            currentIndex++;
+
+            if (currentIndex >= sequence.length) {
+                const holdMs = 600; // 最后一个数字多停留一下再显示完成
+                timerHandle = setTimeout(() => {
+                    finishCounting();
+                }, holdMs);
+                return;
+            }
+
+            const intervalMs = (parseFloat(document.getElementById('intervalSelect').value) || 1) * 1000;
+            timerHandle = setTimeout(tickNext, intervalMs);
+        }
+
+        function displayNumber(num, isLast) {
+            const el = document.getElementById('numberDisplay');
+            el.textContent = num;
+            el.classList.toggle('final', !!isLast);
+            el.classList.remove('pop');
+            void el.offsetWidth; // 强制重排，让动画可以重新触发
+            el.classList.add('pop');
+        }
+
+        function togglePause() {
+            if (!isRunning) return;
+            isPaused = !isPaused;
+            const btn = document.getElementById('pauseBtn');
+
+            if (isPaused) {
+                clearTimeout(timerHandle);
+                if ('speechSynthesis' in window) speechSynthesis.cancel();
+                btn.textContent = '▶️ 继续';
+            } else {
+                btn.textContent = '⏸ 暂停';
+                tickNext();
+            }
+        }
+
+        function stopCounting() {
+            isRunning = false;
+            isPaused = false;
+            clearTimeout(timerHandle);
+            if ('speechSynthesis' in window) speechSynthesis.cancel();
+            backToSetup();
+        }
+
+        function finishCounting() {
+            isRunning = false;
+            isPaused = false;
+            clearTimeout(timerHandle);
+
+            const finishTitle = document.getElementById('finishTitle');
+            finishTitle.textContent = currentMode === 'down' ? '🎉 倒计时结束，开始吧！' : '🎉 报数完成！';
+
+            const soundMode = document.getElementById('soundMode').value;
+            if (soundMode === 'beep') {
+                playBeep(1240, 0.35);
+            } else if (soundMode === 'voice' && currentMode === 'down') {
+                setTimeout(() => speakNumber('开始'), 150);
+            }
+
+            document.getElementById('stageActive').style.display = 'none';
+            document.getElementById('finishPanel').classList.add('active');
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        function backToSetup() {
+            document.getElementById('stageActive').style.display = 'none';
+            document.getElementById('finishPanel').classList.remove('active');
+            document.getElementById('stageEmpty').style.display = 'block';
+            document.getElementById('startBtn').disabled = false;
+        }
+    </script>
+</body>
+
+</html>
