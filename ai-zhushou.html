@@ -274,13 +274,14 @@
                     <li>这是实验性功能，依赖社区提供的浏览器版模型文件，可能不稳定或加载失败</li>
                     <li id="mobileWarning" style="display: none;"><strong>检测到你正在用手机访问</strong>：这个功能对内存要求较高，手机上很容易出现"加载到一半页面自动刷新/卡住"的情况（本质是系统内存不足），成功率不如电脑浏览器，请酌情尝试，条件允许的话更建议换用电脑</li>
                     <li>如果想清理占用的存储空间、或者遇到问题想重新下载，可以点击下方"🗑️ 清理模型缓存"</li>
-                    <li>首次使用需要下载约 <strong>500MB 以上</strong>的模型数据，仅下载一次，浏览器会自动缓存；请在网络良好时使用</li>
-                    <li>本模型用的是 4bit 量化格式，<strong>主要依赖 WebGPU 显卡加速</strong>：完全没有可用显卡（或只有软件模拟适配器）时会<strong>在加载前直接拒绝</strong>，因为这种量化格式没有 CPU 版本、根本跑不起来；就算检测到了真实显卡，<strong>集成显卡（核显）对 1B 参数模型来说仍然会比独立显卡慢很多</strong>，请耐心等待并降低速度预期</li>
-                    <li><strong>关于"回答质量"</strong>：这是一个仅 <strong>1B 参数、再经过 4bit 量化的小模型</strong>，能力上限本来就有限，回答简单、偶尔答非所问都属正常。<strong>显卡只影响快慢、不影响聪明程度</strong>——换独立显卡只会更快，不会让回答变得更准</li>
+                    <li>页面会<strong>自动检测硬件并推荐最合适的模型档位</strong>（标准版约 480MB / 兼容版约 780MB / MiniCPM5-1B 约 930MB / 加强版约 1.2GB），首次使用需下载对应的模型数据，仅下载一次，浏览器会自动缓存；请在网络良好时使用</li>
+                    <li>这些模型均为 4bit 量化格式，<strong>主要依赖 WebGPU 显卡加速</strong>：完全没有可用显卡（或只有软件模拟适配器）时会<strong>在加载前直接拒绝</strong>，因为这种格式没有实用的 CPU 版本；显卡不支持 fp16 时会自动推荐兼容版。就算检测到了真实显卡，<strong>集成显卡（核显）仍然会比独立显卡慢一些</strong>，请耐心等待并降低速度预期</li>
+                    <li><strong>关于"回答质量"</strong>：标准/兼容版是 <strong>0.5B 参数、再经过 4bit 量化的小模型</strong>，能力上限本来就有限，回答简单、偶尔答非所问都属正常。<strong>显卡只影响快慢、不影响聪明程度</strong>——想要更好的回答质量，可以在内存充裕的电脑上手动选择加强版（1.5B，有内存不足崩溃的风险）</li>
                     <li id="macWarning" style="display: none;"><strong>检测到你在用 Mac</strong>：部分 Mac 的 Chrome/浏览器在加载这个模型时，可能因为 GPU 显存不足导致<strong>浏览器（或标签页）直接崩溃/重载</strong>——这类崩溃发生在很底层，页面无法完全拦截。建议加载前先关掉其它占显存的标签页/应用，并优先使用最新版 Chrome</li>
                     <li>这里只是一个用于测试模型效果的<strong>对话调试窗口</strong>；具体的"AI 辅助生成"功能（如听写词语生成）已经分别做进了对应的功能页面里，加载过一次模型后，那些页面会自动出现对应入口</li>
-                    <li>模型权重遵循 OpenBMB「通用模型许可协议」：学术研究免费，如需商业用途需邮件登记，详见
-                        <a href="https://github.com/OpenBMB/General-Model-License" target="_blank" rel="noopener noreferrer">协议原文</a>
+                    <li>可选模型来自通义千问 <a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct" target="_blank"
+                            rel="noopener noreferrer">Qwen2.5</a> 与面壁智能 <a href="https://huggingface.co/openbmb/MiniCPM5-1B"
+                            target="_blank" rel="noopener noreferrer">MiniCPM5</a> 系列，权重均遵循 <strong>Apache 2.0</strong> 开源许可，可自由用于学术与商业用途
                     </li>
                 </ul>
             </div>
@@ -288,11 +289,29 @@
             <div class="device-status" id="deviceStatus">正在检测设备加速能力...</div>
             <div class="device-status" id="crashHint" style="display: none; background: #fff3f0; color: #8a3324;"></div>
 
+            <div class="button-group" style="margin-bottom: 14px;">
+                <button class="btn btn-secondary" id="hwCheckBtn">🔍 检测硬件并查看详情</button>
+            </div>
+            <div id="hwReport" style="display: none; margin-bottom: 14px; padding: 14px 16px; background: #eef1f5;
+                border-radius: 10px; font-size: 13px; color: #444; line-height: 2;"></div>
+
+            <div class="model-select-row" id="modelSelectRow" style="display: none; margin-bottom: 14px;">
+                <label for="modelTierSelect" style="font-size: 13px; color: #555; font-weight: 600;">选择模型：</label>
+                <select id="modelTierSelect"
+                    style="margin-left: 6px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; max-width: 100%;"></select>
+                <div id="modelTierDesc" style="font-size: 12.5px; color: #777; margin-top: 6px; line-height: 1.6;"></div>
+            </div>
+
             <div class="button-group">
                 <button class="btn btn-primary" id="loadBtn">📥 加载模型</button>
-                <button class="btn btn-secondary" id="clearCacheBtn">🗑️ 清理模型缓存</button>
+                <button class="btn btn-secondary" id="clearCacheBtn">🗑️ 清理全部模型缓存</button>
             </div>
             <div class="load-status" id="cacheStatus"></div>
+
+            <div id="modelManager" style="display: none; margin-top: 16px;">
+                <div style="font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px;">💾 本地已下载的模型</div>
+                <div id="modelManagerList"></div>
+            </div>
 
             <div class="progress-wrap" id="progressWrap">
                 <div class="progress-track">
@@ -318,7 +337,8 @@
             <p>
                 基于 <a href="https://github.com/huggingface/transformers.js" target="_blank"
                     rel="noopener noreferrer">Transformers.js</a> 与
-                <a href="https://github.com/OpenBMB/MiniCPM" target="_blank" rel="noopener noreferrer">MiniCPM5-1B</a>
+                <a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct" target="_blank" rel="noopener noreferrer">Qwen2.5</a>
+                / <a href="https://huggingface.co/openbmb/MiniCPM5-1B" target="_blank" rel="noopener noreferrer">MiniCPM5</a>
                 &nbsp;|&nbsp;
                 <a href="https://github.com/caicaicai/miaozitie" target="_blank" rel="noopener noreferrer">GitHub
                     开源</a>
@@ -328,7 +348,12 @@
     </div>
 
     <script type="module">
-        import { loadAIModel, generateWithAI, detectGPUAdapter, clearAIModelCache } from './ai-engine.js';
+        import {
+            loadAIModel, generateWithAI, detectGPUAdapter, clearAIModelCache,
+            getModelPlan, listDownloadedModels, deleteDownloadedModel
+        } from './ai-engine.js';
+
+        let currentPlan = null; // getModelPlan() 的结果，initDeviceStatus 里填充
 
         const chatHistory = [
             { role: 'system', content: '你是一个专为小学生内容创作服务的助手，回答要简洁、健康、适合儿童阅读，使用中文回复。' }
@@ -440,8 +465,173 @@
             const limitText = limitParts.length ? '，' + limitParts.join('、') : '';
 
             el.textContent = `✅ 检测到真实 WebGPU 显卡加速${desc ? '（' + desc + '）' : ''}${limitText}。` +
-                '提示：这里无法准确判断是独立显卡还是集成显卡（核显）——如果是集成显卡，对 1B 参数模型来说仍然会比较慢，' +
-                '请耐心等待，不代表功能出错。另外，回答是否"聪明"取决于模型本身（1B 小模型），和显卡快慢无关。';
+                '提示：这里无法准确判断是独立显卡还是集成显卡（核显）——如果是集成显卡，对这个小模型来说仍然会稍慢一些，' +
+                '请耐心等待，不代表功能出错。另外，回答是否"聪明"取决于所选模型本身，和显卡快慢无关。';
+
+            // 根据硬件检测结果生成模型分档方案，并渲染模型选择下拉框
+            await renderModelSelect();
+        }
+
+        // 渲染"选择模型"下拉框：只列出当前硬件够格的档位，默认选中
+        // 上次成功加载过的档位（如有），否则选中自动推荐的档位。
+        async function renderModelSelect() {
+            currentPlan = await getModelPlan();
+            if (!currentPlan.usable || !currentPlan.tiers.length) return; // 跑不了就不显示选择框
+
+            const row = document.getElementById('modelSelectRow');
+            const select = document.getElementById('modelTierSelect');
+            select.innerHTML = '';
+
+            currentPlan.tiers.filter(t => t.allowed).forEach((t) => {
+                const opt = document.createElement('option');
+                opt.value = t.key;
+                opt.textContent = t.label + (t.recommended ? '（推荐）' : '') + (t.risky ? '（有崩溃风险）' : '');
+                select.appendChild(opt);
+            });
+
+            select.value = currentPlan.savedKey || currentPlan.recommendedKey;
+            updateTierDesc();
+            row.style.display = 'block';
+        }
+
+        function updateTierDesc() {
+            const select = document.getElementById('modelTierSelect');
+            const descEl = document.getElementById('modelTierDesc');
+            const tier = currentPlan && currentPlan.tiers.find(t => t.key === select.value);
+            if (!tier) { descEl.textContent = ''; return; }
+            descEl.textContent = tier.description + (tier.note ? ' ' + tier.note : '');
+            descEl.style.color = tier.risky ? '#8a3324' : '#777';
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '大小未知';
+            const mb = bytes / (1024 * 1024);
+            return mb >= 1000 ? (mb / 1024).toFixed(2) + ' GB' : Math.round(mb) + ' MB';
+        }
+
+        // 渲染"本地已下载的模型"列表：只列出已有缓存的档位，可定向删除
+        async function renderModelManager() {
+            const wrap = document.getElementById('modelManager');
+            const list = document.getElementById('modelManagerList');
+            const models = await listDownloadedModels();
+            const cached = models.filter(m => m.cached);
+
+            if (!cached.length) {
+                wrap.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+
+            list.innerHTML = '';
+            cached.forEach((m) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 10px;' +
+                    'padding: 8px 12px; background: #eef1f5; border-radius: 8px; margin-bottom: 6px; font-size: 13px; color: #444;';
+
+                const label = document.createElement('span');
+                label.textContent = `${m.label} — 占用 ${formatSize(m.sizeBytes)}（${m.fileCount} 个文件）`;
+                row.appendChild(label);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-secondary';
+                delBtn.style.cssText = 'padding: 4px 12px; font-size: 12px; flex-shrink: 0;';
+                delBtn.textContent = '🗑️ 删除';
+                delBtn.addEventListener('click', async () => {
+                    const confirmed = window.confirm(
+                        `确定要删除「${m.label}」的本地缓存吗？\n\n删除后如需再次使用这一档，需要重新下载。`
+                    );
+                    if (!confirmed) return;
+                    delBtn.disabled = true;
+                    try {
+                        const r = await deleteDownloadedModel(m.key);
+                        document.getElementById('cacheStatus').textContent =
+                            `✅ 已删除「${m.label}」（${r.filesDeleted} 个文件）。`;
+                    } catch (err) {
+                        console.error('删除模型缓存失败:', err);
+                        document.getElementById('cacheStatus').textContent =
+                            '❌ 删除失败：' + (err && err.message ? err.message : '未知错误');
+                    }
+                    await renderModelManager();
+                    await renderModelSelect(); // 档位记忆可能被重置，刷新下拉框默认项
+                });
+                row.appendChild(delBtn);
+                list.appendChild(row);
+            });
+            wrap.style.display = 'block';
+        }
+
+        // ===== 手动硬件检测 + 详细报告 =====
+
+        function reportLine(label, value, good) {
+            const icon = good === true ? '✅' : (good === false ? '❌' : 'ℹ️');
+            return `${icon} <strong>${label}：</strong>${value}`;
+        }
+
+        // 用检测结果 + 分档方案渲染一份人话版的硬件报告
+        async function renderHardwareReport() {
+            const panel = document.getElementById('hwReport');
+            const plan = await getModelPlan();
+            const gpu = plan.gpu || {};
+            const info = gpu.info || {};
+            const lines = [];
+
+            // --- 硬件明细 ---
+            if (gpu.timedOut) {
+                lines.push(reportLine('WebGPU', '检测超时（浏览器一直没有返回结果，手机浏览器上较常见），结果不确定', false));
+            } else if (!gpu.available) {
+                lines.push(reportLine('WebGPU', '不可用——没有检测到显卡适配器', false));
+            } else {
+                lines.push(reportLine('WebGPU', gpu.isFallback ? '有适配器，但是软件模拟（无真实显卡加速）' : '可用，检测到真实显卡适配器', !gpu.isFallback));
+                const desc = [info.vendor, info.architecture, info.device, info.description].filter(Boolean).join(' / ');
+                if (desc) lines.push(reportLine('显卡信息', desc + '（浏览器出于隐私考虑，通常不透露具体型号，也无法区分独显/核显）'));
+                lines.push(reportLine('fp16 支持（shader-f16）',
+                    gpu.hasF16 ? '支持（可用体积更小的 q4f16 模型）' : '未检测到（只能用兼容版 q4 模型）', !!gpu.hasF16));
+                const limits = gpu.limits || {};
+                if (limits.maxBufferSize) {
+                    lines.push(reportLine('GPU 最大缓冲', formatSize(limits.maxBufferSize) +
+                        '（单个模型权重文件必须装得进这个上限）'));
+                }
+                if (limits.maxStorageBufferBindingSize) {
+                    lines.push(reportLine('单缓冲绑定上限', formatSize(limits.maxStorageBufferBindingSize)));
+                }
+            }
+            lines.push(reportLine('设备内存', plan.deviceMemoryGB
+                ? `约 ${plan.deviceMemoryGB}GB 或以上（浏览器最多只报 8，且报的是总内存、不是当前空闲内存——这正是无法提前保证"大模型一定不崩"的原因）`
+                : '浏览器未提供'));
+            lines.push(reportLine('设备类型', isProbablyMobile() ? '手机/平板（大体积模型已隐藏）' : '桌面电脑'));
+
+            // --- 推荐结论 ---
+            lines.push('<hr style="border: none; border-top: 1px solid #d8dde5; margin: 8px 0;">');
+            if (!plan.usable) {
+                lines.push(reportLine('结论', plan.blockedReason + ' 无法在此设备上运行任何档位的模型。', false));
+            } else {
+                const rec = plan.tiers.find(t => t.recommended);
+                lines.push(reportLine('推荐模型', `<strong>${rec ? rec.label : '标准版'}</strong>——` +
+                    (plan.recommendedKey === 'compat' ? '因为显卡不支持 fp16，自动改推兼容版。' : '兼顾质量与稳定性的默认选择。'), true));
+                plan.tiers.forEach(t => {
+                    if (t.recommended) return;
+                    lines.push(reportLine(t.label, t.allowed
+                        ? (t.risky ? '硬件大致够格，可手动选用（有内存不足崩溃的风险）' : '可用')
+                        : '不可用——' + (t.note || '硬件不满足要求'), t.allowed ? undefined : false));
+                });
+            }
+
+            panel.innerHTML = lines.join('<br>');
+            panel.style.display = 'block';
+        }
+
+        async function handleHardwareCheck() {
+            const btn = document.getElementById('hwCheckBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 正在检测...';
+            try {
+                await raceTimeout(detectGPUAdapter(true), 6000, null); // 强制重新检测（带看门狗超时）
+                await initDeviceStatus();     // 刷新顶部一句话状态 + 模型下拉框
+                await renderHardwareReport(); // 展示详细报告
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 重新检测硬件';
+            }
         }
 
         async function handleLoadClick() {
@@ -460,6 +650,12 @@
             // 这个标记会一直留着，下次打开页面时 checkPreviousCrash() 就能据此提示用户。
             try { sessionStorage.setItem(LOAD_ATTEMPT_KEY, '1'); } catch (e) { /* 忽略 */ }
 
+            // 加载用户在下拉框里选中的档位（下拉框没渲染出来时传 undefined，走自动推荐）
+            const select = document.getElementById('modelTierSelect');
+            const tierKey = document.getElementById('modelSelectRow').style.display !== 'none' && select.value
+                ? select.value : undefined;
+            select.disabled = true; // 开始加载后锁定选择，避免"换档不生效"的误解
+
             try {
                 await loadAIModel((data) => {
                     if (data.status === 'progress' && data.total) {
@@ -470,24 +666,26 @@
                         progressBar.style.width = '100%';
                         loadStatus.textContent = '✅ 模型加载完成！';
                     }
-                });
+                }, tierKey);
 
                 loadStatus.textContent = '✅ 模型加载完成，可以开始对话啦！';
                 document.getElementById('chatPanel').classList.add('active');
                 document.getElementById('chatInput').focus();
                 try { sessionStorage.removeItem(LOAD_ATTEMPT_KEY); } catch (e) { /* 忽略 */ }
+                renderModelManager(); // 新下载的文件出现在"本地已下载的模型"里
             } catch (err) {
                 console.error('模型加载失败:', err);
                 loadStatus.textContent = '❌ 模型加载失败：' + (err && err.message ? err.message : '未知错误') +
                     '。可能是网络问题，或该模型文件暂时不可用，请稍后重试。';
                 loadBtn.disabled = false;
+                select.disabled = false; // 加载失败后允许换一档重试
                 try { sessionStorage.removeItem(LOAD_ATTEMPT_KEY); } catch (e) { /* 忽略 */ }
             }
         }
 
         async function handleClearCache() {
             const confirmed = window.confirm(
-                '确定要清理已下载的模型缓存吗？\n\n清理后下次使用需要重新下载约 500MB 以上的模型数据。'
+                '确定要清理已下载的模型缓存吗？\n\n会清掉所有档位（标准/兼容/加强版）已下载的模型文件，下次使用需要重新下载。'
             );
             if (!confirmed) return;
 
@@ -508,6 +706,11 @@
                 document.getElementById('progressWrap').classList.remove('active');
                 document.getElementById('progressBar').style.width = '0%';
                 document.getElementById('loadBtn').disabled = false;
+
+                // 清理会重置档位记忆，重新渲染选择框（回到自动推荐档）并解锁
+                document.getElementById('modelTierSelect').disabled = false;
+                await renderModelSelect();
+                await renderModelManager();
             } catch (err) {
                 console.error('清理缓存失败:', err);
                 statusEl.textContent = '❌ 清理缓存失败：' + (err && err.message ? err.message : '未知错误');
@@ -549,11 +752,24 @@
             chatHistory.push({ role: 'user', content: text });
 
             const pendingBubble = appendMessage('assistant', '⏳ 正在思考...', true);
+            const log = document.getElementById('chatLog');
 
             try {
-                const reply = await generateWithAI(chatHistory);
-                pendingBubble.textContent = reply || '（没有生成有效内容，请重新试试）';
+                // 边生成边显示：onToken 每收到一段新文本就追加到气泡里，避免慢设备上
+                // 长时间只显示"正在思考"。streamed 累加的是流式片段，最终仍以 reply
+                // （清理后的完整文本）为准，兜住个别浏览器/收尾标记导致的差异。
+                let streamed = '';
+                const reply = await generateWithAI(chatHistory, {
+                    onToken: (chunk) => {
+                        streamed += chunk;
+                        pendingBubble.textContent = streamed;
+                        pendingBubble.classList.remove('pending');
+                        log.scrollTop = log.scrollHeight;
+                    }
+                });
+                pendingBubble.textContent = reply || streamed || '（没有生成有效内容，请重新试试）';
                 pendingBubble.classList.remove('pending');
+                log.scrollTop = log.scrollHeight;
                 chatHistory.push({ role: 'assistant', content: reply });
             } catch (err) {
                 console.error('生成失败:', err);
@@ -570,6 +786,8 @@
             document.getElementById('chatLog').innerHTML = '';
         }
 
+        document.getElementById('modelTierSelect').addEventListener('change', updateTierDesc);
+        document.getElementById('hwCheckBtn').addEventListener('click', handleHardwareCheck);
         document.getElementById('loadBtn').addEventListener('click', handleLoadClick);
         document.getElementById('clearCacheBtn').addEventListener('click', handleClearCache);
         document.getElementById('chatSendBtn').addEventListener('click', handleSend);
@@ -583,6 +801,7 @@
 
         checkPreviousCrash();
         initDeviceStatus();
+        renderModelManager(); // 与 GPU 检测无关：就算显卡不可用，也应能查看/清理本地缓存
     </script>
 </body>
 
