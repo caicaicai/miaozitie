@@ -275,7 +275,9 @@
                     <li id="mobileWarning" style="display: none;"><strong>检测到你正在用手机访问</strong>：这个功能对内存要求较高，手机上很容易出现"加载到一半页面自动刷新/卡住"的情况（本质是系统内存不足），成功率不如电脑浏览器，请酌情尝试，条件允许的话更建议换用电脑</li>
                     <li>如果想清理占用的存储空间、或者遇到问题想重新下载，可以点击下方"🗑️ 清理模型缓存"</li>
                     <li>首次使用需要下载约 <strong>500MB 以上</strong>的模型数据，仅下载一次，浏览器会自动缓存；请在网络良好时使用</li>
-                    <li>本模型用的是 4bit 量化格式，<strong>主要依赖 WebGPU 显卡加速</strong>：完全没有可用显卡时可能直接加载失败，而不只是变慢；就算检测到了 WebGPU，<strong>集成显卡（核显）对 1B 参数模型来说仍然会比独立显卡慢很多</strong>，请耐心等待并降低速度预期</li>
+                    <li>本模型用的是 4bit 量化格式，<strong>主要依赖 WebGPU 显卡加速</strong>：完全没有可用显卡（或只有软件模拟适配器）时会<strong>在加载前直接拒绝</strong>，因为这种量化格式没有 CPU 版本、根本跑不起来；就算检测到了真实显卡，<strong>集成显卡（核显）对 1B 参数模型来说仍然会比独立显卡慢很多</strong>，请耐心等待并降低速度预期</li>
+                    <li><strong>关于"回答质量"</strong>：这是一个仅 <strong>1B 参数、再经过 4bit 量化的小模型</strong>，能力上限本来就有限，回答简单、偶尔答非所问都属正常。<strong>显卡只影响快慢、不影响聪明程度</strong>——换独立显卡只会更快，不会让回答变得更准</li>
+                    <li id="macWarning" style="display: none;"><strong>检测到你在用 Mac</strong>：部分 Mac 的 Chrome/浏览器在加载这个模型时，可能因为 GPU 显存不足导致<strong>浏览器（或标签页）直接崩溃/重载</strong>——这类崩溃发生在很底层，页面无法完全拦截。建议加载前先关掉其它占显存的标签页/应用，并优先使用最新版 Chrome</li>
                     <li>这里只是一个用于测试模型效果的<strong>对话调试窗口</strong>；具体的"AI 辅助生成"功能（如听写词语生成）已经分别做进了对应的功能页面里，加载过一次模型后，那些页面会自动出现对应入口</li>
                     <li>模型权重遵循 OpenBMB「通用模型许可协议」：学术研究免费，如需商业用途需邮件登记，详见
                         <a href="https://github.com/OpenBMB/General-Model-License" target="_blank" rel="noopener noreferrer">协议原文</a>
@@ -339,6 +341,20 @@
             return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
         }
 
+        // 粗略判断是否为 Mac（桌面版），用于提示"加载时可能因 GPU 显存不足崩溃"这一
+        // Mac 上较常见的现象。iPhone/iPad 归到 isProbablyMobile()，这里排除掉。
+        function isProbablyMac() {
+            if (typeof navigator === 'undefined') return false;
+            const ua = navigator.userAgent || '';
+            return /Macintosh|Mac OS X/i.test(ua) && !/iPhone|iPad|iPod/i.test(ua);
+        }
+
+        // 把字节数格式化成 MB，用于展示适配器的显存上限。
+        function formatMB(bytes) {
+            if (!bytes || typeof bytes !== 'number') return null;
+            return Math.round(bytes / (1024 * 1024)) + ' MB';
+        }
+
         // 独立于 ai-engine.js 内部超时机制之外，再加一层"看门狗"超时保护：
         // 万一某个浏览器组合下内部的超时逻辑没能按预期触发（比如更底层的 API
         // 出现了没预料到的卡住方式），这里的 setTimeout 是完全独立的一套定时器，
@@ -377,6 +393,9 @@
             if (isProbablyMobile()) {
                 document.getElementById('mobileWarning').style.display = 'list-item';
             }
+            if (isProbablyMac()) {
+                document.getElementById('macWarning').style.display = 'list-item';
+            }
 
             const el = document.getElementById('deviceStatus');
             el.textContent = '正在检测显卡加速能力...';
@@ -396,8 +415,8 @@
             }
 
             if (!gpu.available) {
-                el.textContent = '❌ 未检测到可用的 WebGPU 显卡适配器。本模型使用的 4bit 量化格式主要依赖 WebGPU，' +
-                    '没有显卡加速很可能会加载失败或几乎无法运行，不只是"慢"。建议换用支持 WebGPU 的较新 Chrome / Edge 浏览器，并确认设备有可用显卡。';
+                el.textContent = '❌ 未检测到可用的 WebGPU 显卡适配器。本模型使用的 4bit 量化格式只有 WebGPU 版本、没有 CPU 版本，' +
+                    '没有可用显卡时无法运行，点击"加载模型"会被直接拒绝。建议换用支持 WebGPU 的较新 Chrome / Edge 浏览器，并确认设备有可用显卡。';
                 return;
             }
 
@@ -406,12 +425,23 @@
                 .filter(Boolean).join(' / ');
 
             if (gpu.isFallback) {
-                el.textContent = '⚠️ 检测到的 WebGPU 适配器是软件模拟（并非真实显卡加速），推理速度会和纯 CPU 差不多，非常慢。';
-            } else {
-                el.textContent = `✅ 检测到 WebGPU 显卡加速${desc ? '（' + desc + '）' : ''}。` +
-                    '提示：这里只能检测到有没有可用显卡，无法准确判断是独立显卡还是集成显卡（核显）——如果是集成显卡，' +
-                    '对 1B 参数量的模型来说仍然会比较慢，请耐心等待，不代表功能出错。';
+                el.textContent = '❌ 检测到的 WebGPU 适配器是软件模拟（并非真实显卡加速），用它加载这个模型会极慢、且很可能让浏览器崩溃，' +
+                    '因此点击"加载模型"会被直接拒绝。请在有真实显卡加速的设备/浏览器上再试。';
+                return;
             }
+
+            // 展示适配器读到的关键显存上限，方便判断"加载时是否可能因显存不足崩溃"。
+            const limits = gpu.limits || {};
+            const limitParts = [];
+            const storageMB = formatMB(limits.maxStorageBufferBindingSize);
+            const bufferMB = formatMB(limits.maxBufferSize);
+            if (storageMB) limitParts.push('单缓冲绑定上限 ' + storageMB);
+            if (bufferMB) limitParts.push('最大缓冲 ' + bufferMB);
+            const limitText = limitParts.length ? '，' + limitParts.join('、') : '';
+
+            el.textContent = `✅ 检测到真实 WebGPU 显卡加速${desc ? '（' + desc + '）' : ''}${limitText}。` +
+                '提示：这里无法准确判断是独立显卡还是集成显卡（核显）——如果是集成显卡，对 1B 参数模型来说仍然会比较慢，' +
+                '请耐心等待，不代表功能出错。另外，回答是否"聪明"取决于模型本身（1B 小模型），和显卡快慢无关。';
         }
 
         async function handleLoadClick() {

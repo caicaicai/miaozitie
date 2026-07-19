@@ -54,16 +54,29 @@ function withTimeout(promise, ms, fallbackValue) {
 // 手机浏览器上 navigator.gpu.requestAdapter()（或 requestAdapterInfo()）有时会
 // 一直不返回结果（既不成功也不报错），所以整个检测过程都套了超时保护，最多
 // 等 4 秒，避免页面卡在"正在检测..."上不动。
-export async function detectGPUAdapter() {
+//
+// 返回对象里的 limits 是从适配器读到的关键显存上限（maxStorageBufferBindingSize /
+// maxBufferSize），用来在诊断信息里展示，并让 UI 对"上限明显偏小、加载时很可能
+// 因显存不足崩溃"的设备提前给出提示。
+//
+// 检测结果会缓存到 lastGPUDetection：页面加载时先检测一次展示提示，真正点"加载
+// 模型"时 preflightWebGPU() 会复用同一个结果，避免重复 requestAdapter。检测超时
+// 不缓存（下次仍会重试），因为超时往往是偶发的。
+let lastGPUDetection = null;
+
+export async function detectGPUAdapter(forceRefresh) {
+    if (lastGPUDetection && !forceRefresh) return lastGPUDetection;
+
     if (typeof navigator === 'undefined' || !('gpu' in navigator)) {
-        return { available: false, isFallback: false, info: null, timedOut: false };
+        lastGPUDetection = { available: false, isFallback: false, info: null, limits: null, timedOut: false };
+        return lastGPUDetection;
     }
 
     const detect = (async () => {
         try {
             const adapter = await navigator.gpu.requestAdapter();
             if (!adapter) {
-                return { available: false, isFallback: false, info: null, timedOut: false };
+                return { available: false, isFallback: false, info: null, limits: null, timedOut: false };
             }
 
             let info = null;
@@ -77,13 +90,19 @@ export async function detectGPUAdapter() {
             }
 
             const isFallback = !!(adapter.isFallbackAdapter || (info && info.isFallbackAdapter));
-            return { available: true, isFallback, info, timedOut: false };
+            const limits = adapter.limits ? {
+                maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+                maxBufferSize: adapter.limits.maxBufferSize
+            } : null;
+            return { available: true, isFallback, info, limits, timedOut: false };
         } catch (e) {
-            return { available: false, isFallback: false, info: null, timedOut: false };
+            return { available: false, isFallback: false, info: null, limits: null, timedOut: false };
         }
     })();
 
-    return withTimeout(detect, 4000, { available: false, isFallback: false, info: null, timedOut: true });
+    const result = await withTimeout(detect, 4000, { available: false, isFallback: false, info: null, limits: null, timedOut: true });
+    if (!result.timedOut) lastGPUDetection = result; // 超时不缓存，留待下次重试
+    return result;
 }
 
 // 同步、粗略的判断（只看 API 是否存在），仅用于加载模型时决定 device 参数。
@@ -166,17 +185,51 @@ export function isModelReadyInThisPage() {
     return generatorPromise !== null;
 }
 
+// 加载前的显卡预检：把"detectGPUAdapter() 的诚实检测结论"真正用到加载决策上，
+// 而不是像以前那样只用来显示提示、加载时却无条件强上 webgpu。
+//
+// 这个模型用的 4bit 量化算子（GatherBlockQuantized 等）只有 WebGPU 内核、没有
+// 对应的 WASM(CPU) 内核，所以"能不能跑"基本等价于"有没有一块真实的 WebGPU 显卡"——
+// 以前那条 device: 'wasm' 的 fallback 分支对这个模型其实是死路。这里对确定跑不了
+// 的情况直接抛一个说明清楚的错误（会被页面的 try/catch 接住、显示成友好提示），
+// 把"闷头冲进去然后浏览器崩溃"提前变成"加载前就明确拒绝"。
+//
+// 注意：真实独立/集成显卡能通过这一关，但仍可能在真正分配显存时因显存不足而让
+// GPU 进程崩溃（Mac 上一些 Chrome/Metal 组合比较常见）。那种崩溃发生在更底层、
+// 抛不到 JS 层，这里无法完全预防，只能靠页面的"崩溃看门狗"事后提示用户。
+async function preflightWebGPU() {
+    const gpu = await detectGPUAdapter();
+
+    // 检测超时：结果不确定（手机浏览器上偶发），不硬性拦截，放行让它自己尝试。
+    if (gpu.timedOut) return;
+
+    if (!gpu.available) {
+        throw new Error(
+            '未检测到可用的 WebGPU 显卡。这个模型用的 4bit 量化格式只有显卡(WebGPU)版本的实现、' +
+            '没有 CPU 版本，因此没有可用显卡时无法加载。请换用支持 WebGPU 且有可用显卡的较新 Chrome / Edge 浏览器。'
+        );
+    }
+
+    if (gpu.isFallback) {
+        throw new Error(
+            '检测到的 WebGPU 适配器是软件模拟（并非真实显卡加速），用它加载这个模型会极慢、' +
+            '而且很可能直接让浏览器崩溃，已阻止加载。请在有真实显卡加速的设备/浏览器上再试。'
+        );
+    }
+    // 有真实适配器：放行。显存不足导致的崩溃无法在这一层预防（见上方说明）。
+}
+
 // 加载（或复用）text-generation pipeline。多次调用会复用同一个 Promise，
 // 不会重复触发下载/初始化。progressCallback 可选，用于展示下载进度。
 export async function loadAIModel(progressCallback) {
     if (generatorPromise) return generatorPromise;
 
     generatorPromise = (async () => {
+        await preflightWebGPU(); // 确定跑不了的设备在这里就会抛错，不再强上 webgpu
         const { pipeline } = await import(TRANSFORMERS_CDN_URL);
-        const device = supportsWebGPU() ? 'webgpu' : 'wasm';
         const generator = await pipeline('text-generation', MODEL_ID, {
             dtype: 'q4',
-            device,
+            device: 'webgpu', // 预检已保证有真实 WebGPU 适配器
             progress_callback: progressCallback
         });
         markModelLoaded();
